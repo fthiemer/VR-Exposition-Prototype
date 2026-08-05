@@ -22,43 +22,43 @@ namespace Exposure.EditorTools
     {
         private const string Folder = "Assets/_Exposure/Scenarios";
 
-        [MenuItem("Exposure/Studien-Szenario 'Klaustrophobie' erzeugen")]
+        [MenuItem("Exposure/Generate Claustrophobia Study Scenario")]
         public static void CreateClaustrophobiaScenario()
         {
             Directory.CreateDirectory(Folder);
 
             var scenario = ScriptableObject.CreateInstance<ExposureScenarioDefinition>();
-            scenario.scenarioName = "Klaustrophobie – Kellerraum (Studie Mies 2025)";
-            scenario.description = "Studien-getreue VR-Exposition: 6 Abstufungen à 5 min, " +
-                                   "einleitende Taktatmung 3 min. Angststeuerung über Fluchtmöglichkeit " +
-                                   "(Luke), Beleuchtung und Sicherheitssignal (Leiter).";
-            scenario.source = "Mies (2025), Uni Mainz";
+            scenario.scenarioName = "Claustrophobia - Basement Room (Study: Mies 2025)";
+            scenario.description = "Study-faithful VR exposure: 6 steps of 5 min each, " +
+                                   "introductory paced breathing 3 min. Anxiety is controlled via escape " +
+                                   "possibility (hatch), lighting and safety signal (ladder).";
+            scenario.source = "Mies (2025), University of Mainz";
             scenario.maxHeartRateAbort = 200f;
             scenario.pacedBreathingSeconds = 180f;
 
-            scenario.steps.Add(Step("slot2", "Slot 2 – hell, Leiter, Luke offen",
+            scenario.steps.Add(Step("slot2", "Slot 2 - bright, ladder, hatch open",
                 LightingMode.CeilingLampBright, HatchState.OpenWithView, true, false, false));
-            scenario.steps.Add(Step("slot3", "Slot 3 – hell, Leiter, Luke geschlossen",
+            scenario.steps.Add(Step("slot3", "Slot 3 - bright, ladder, hatch closed",
                 LightingMode.CeilingLampBright, HatchState.ClosedMetalPlate, true, false, false));
-            scenario.steps.Add(Step("slot4", "Slot 4 – hell, ohne Leiter, Luke offen",
+            scenario.steps.Add(Step("slot4", "Slot 4 - bright, no ladder, hatch open",
                 LightingMode.CeilingLampBright, HatchState.OpenWithView, false, false, false));
-            scenario.steps.Add(Step("slot5", "Slot 5 – hell, ohne Leiter, Luke geschlossen",
+            scenario.steps.Add(Step("slot5", "Slot 5 - bright, no ladder, hatch closed",
                 LightingMode.CeilingLampBright, HatchState.ClosedMetalPlate, false, false, false));
-            scenario.steps.Add(Step("slot6", "Slot 6 – dunkel, Leiter, Luke offen",
+            scenario.steps.Add(Step("slot6", "Slot 6 - dark, ladder, hatch open",
                 LightingMode.Dark, HatchState.OpenWithView, true, false, false));
-            scenario.steps.Add(Step("slot7", "Slot 7 – kleine Stehlampe, Leiter, Luke geschlossen",
+            scenario.steps.Add(Step("slot7", "Slot 7 - small floor lamp, ladder, hatch closed",
                 LightingMode.SmallFloorLamp, HatchState.ClosedMetalPlate, true, false, false));
 
             foreach (var s in scenario.steps)
                 AssetDatabase.CreateAsset(s, $"{Folder}/Step_{s.stepId}.asset");
 
-            AssetDatabase.CreateAsset(scenario, $"{Folder}/Scenario_Klaustrophobie.asset");
+            AssetDatabase.CreateAsset(scenario, $"{Folder}/Scenario_Claustrophobia.asset");
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
             Selection.activeObject = scenario;
             EditorGUIUtility.PingObject(scenario);
-            Debug.Log("[Exposure] Klaustrophobie-Szenario erzeugt unter " + Folder);
+            Debug.Log("[Exposure] Claustrophobia scenario generated under " + Folder);
         }
 
         private static ExposureStepDefinition Step(string id, string title, LightingMode light,
@@ -70,7 +70,7 @@ namespace Exposure.EditorTools
             step.durationSeconds = 300f;
             step.askAnxietyAtStart = true;
             step.askAnxietyAtEnd = true;
-            step.guidingQuestion = "Was hat sich im Raum gegenüber dem vorherigen Slot verändert?";
+            step.guidingQuestion = "What changed in the room compared to the previous slot?";
             step.roomState = new RoomState
             {
                 lighting = light,

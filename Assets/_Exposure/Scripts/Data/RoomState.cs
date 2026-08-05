@@ -37,13 +37,13 @@ namespace Exposure
         public LightingMode lighting;
         public HatchState hatch;
 
-        [Tooltip("Leiter unter der Luke vorhanden = Sicherheitssignal 'Fluchtweg'.")]
+        [Tooltip("Ladder present under the hatch = safety signal 'escape route'.")]
         public bool ladderPresent;
 
-        [Tooltip("Tür geschlossen (reduziert Fluchtmöglichkeit).")]
+        [Tooltip("Door closed (reduces escape possibility).")]
         public bool doorClosed;
 
-        [Tooltip("Tür zusätzlich abgeschlossen (stärkste Reduktion der Fluchtmöglichkeit).")]
+        [Tooltip("Door additionally locked (strongest reduction of escape possibility).")]
         public bool doorLocked;
 
         public static RoomState Default => new RoomState

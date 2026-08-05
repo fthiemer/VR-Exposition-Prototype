@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a99d87b4d623f94698e23a450000a79, type: 3}
+  m_Name: Scenario_Claustrophobia
+  m_EditorClassIdentifier: Exposure.Runtime::Exposure.ExposureScenarioDefinition
+  scenarioName: 'Claustrophobia - Basement Room (Study: Mies 2025)'
+  description: 'Study-faithful VR exposure: 6 steps of 5 min each, introductory paced
+    breathing 3 min. Anxiety is controlled via escape possibility (hatch), lighting
+    and safety signal (ladder).'
+  source: Mies (2025), University of Mainz
+  maxHeartRateAbort: 200
+  pacedBreathingSeconds: 180
+  steps:
+  - {fileID: 11400000, guid: 9406cbd828a4fe242b32577edb77dc0c, type: 2}
+  - {fileID: 11400000, guid: 9c203858bb5b6854db169626a9c35b77, type: 2}
+  - {fileID: 11400000, guid: e29a96f0fe84e64419f7ef9546bdc4f7, type: 2}
+  - {fileID: 11400000, guid: 4beadbe7251614c4d858b274d3581151, type: 2}
+  - {fileID: 11400000, guid: b12ca551c2abaf346981becd69981543, type: 2}
+  - {fileID: 11400000, guid: a7f5ec2ce32ffd642badec741fc64d19, type: 2}

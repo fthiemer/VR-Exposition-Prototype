@@ -29,11 +29,11 @@ namespace Exposure
     /// </summary>
     public class ExposureSessionController : MonoBehaviour
     {
-        [Header("Szenario")]
+        [Header("Scenario")]
         [SerializeField] private ExposureScenarioDefinition scenario;
         [SerializeField] private bool startOnPlay = false;
 
-        [Header("Abhängigkeiten (müssen die jeweiligen Interfaces implementieren)")]
+        [Header("Dependencies (must implement the respective interfaces)")]
         [SerializeField] private MonoBehaviour environmentControllerBehaviour; // IEnvironmentController
         [SerializeField] private MonoBehaviour anxietyPromptBehaviour;         // IAnxietyPrompt
         [SerializeField] private MonoBehaviour biosignalSourceBehaviour;       // IBiosignalSource
@@ -164,7 +164,7 @@ namespace Exposure
             }
             else
             {
-                string label = phase == "start" ? "Wie stark ist Ihre Angst? (Beginn)" : "Wie stark ist Ihre Angst? (Ende)";
+                string label = phase == "start" ? "How anxious do you feel? (Start)" : "How anxious do you feel? (End)";
                 _prompt.Ask(label, v => _lastAnswer = Mathf.Clamp(v, 0, 100));
                 while (_lastAnswer == null)
                 {

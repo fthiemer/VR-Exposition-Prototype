@@ -12,20 +12,20 @@ namespace Exposure
     /// </summary>
     public class ClaustrophobiaRoomController : MonoBehaviour, IEnvironmentController
     {
-        [Header("Beleuchtung")]
+        [Header("Lighting")]
         [SerializeField] private Light ceilingLamp;
         [SerializeField] private Light smallFloorLamp;
         [SerializeField, Min(0f)] private float ceilingIntensity = 1.2f;
         [SerializeField, Min(0f)] private float floorLampIntensity = 0.4f;
         [SerializeField, Min(0f)] private float transitionSeconds = 0.75f;
 
-        [Header("Luke & Metallplatte")]
-        [SerializeField] private GameObject hatchOpenVisual;      // Blick nach draußen
-        [SerializeField] private GameObject hatchClosedMetalPlate; // Metallplatte
+        [Header("Hatch & Metal Plate")]
+        [SerializeField] private GameObject hatchOpenVisual;      // view outside
+        [SerializeField] private GameObject hatchClosedMetalPlate; // metal plate
 
-        [Header("Weitere Objekte")]
+        [Header("Other Objects")]
         [SerializeField] private GameObject ladder;
-        [SerializeField] private GameObject door;      // geschlossen/offen als Rotation/Visual
+        [SerializeField] private GameObject door;      // open/closed as rotation/visual
         [SerializeField] private GameObject doorLockIndicator;
 
         private Coroutine _lightRoutine;

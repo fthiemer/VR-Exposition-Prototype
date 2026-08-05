@@ -7,34 +7,34 @@ namespace Exposure
     /// Datengetrieben -> neue Abstufungen ohne Code-Änderung, schnelle Iteration.
     /// Bildet 1:1 die Slot-Struktur der Studie ab (Mies 2025, Kap. 2.3).
     /// </summary>
-    [CreateAssetMenu(fileName = "Step_", menuName = "Exposure/Expositions-Abstufung (Step)")]
+    [CreateAssetMenu(fileName = "Step_", menuName = "Exposure/Exposure Step")]
     public class ExposureStepDefinition : ScriptableObject
     {
-        [Header("Identität")]
+        [Header("Identity")]
         public string stepId = "slot";
-        public string title = "Neue Abstufung";
+        public string title = "New Step";
 
         [TextArea(2, 4)]
-        [Tooltip("Instruktion/Leittext, der der Person zu Beginn des Slots angezeigt/vorgelesen wird.")]
+        [Tooltip("Instruction shown/read to the participant at the start of the slot.")]
         public string instruction;
 
-        [Header("Ablauf")]
-        [Tooltip("Dauer des Slots in Sekunden (Studie: 300 s = 5 min).")]
+        [Header("Timing")]
+        [Tooltip("Duration of the slot in seconds (study: 300 s = 5 min).")]
         public float durationSeconds = 300f;
 
-        [Tooltip("Baseline-Slot mit Taktatmung (5 s ein / 5 s aus) statt Raum-Exposition.")]
+        [Tooltip("Baseline slot with paced breathing (5 s in / 5 s out) instead of room exposure.")]
         public bool isBaselineBreathing = false;
 
-        [Header("Angstabfrage (VAS 0-100 %)")]
+        [Header("Anxiety Prompt (VAS 0-100 %)")]
         public bool askAnxietyAtStart = true;
         public bool askAnxietyAtEnd = true;
 
-        [Header("Raumzustand dieser Abstufung")]
+        [Header("Room State For This Step")]
         public RoomState roomState = RoomState.Default;
 
-        [Header("Leitfrage (optional)")]
+        [Header("Guiding Question (optional)")]
         [TextArea(2, 3)]
-        [Tooltip("z. B. 'Was hat sich im Raum gegenüber dem vorherigen Slot verändert?'")]
+        [Tooltip("e.g. 'What changed in the room compared to the previous slot?'")]
         public string guidingQuestion;
     }
 }
