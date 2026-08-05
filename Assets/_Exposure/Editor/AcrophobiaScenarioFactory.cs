@@ -6,12 +6,13 @@ using UnityEngine;
 namespace Exposure.EditorTools
 {
     /// <summary>
-    /// Generates the acrophobia scenario as ScriptableObject assets, modelled on the
-    /// gold-standard protocol of Freeman et al. (2018, Lancet Psychiatry): up to 5
-    /// separate sittings, ~24 min soft budget each, habituation-gated level progression
-    /// (advance after 2 consecutive VAS ratings <= 30) instead of fixed durations. Level
-    /// content (floor/railing/surface/task) follows Francová et al. (2025, JBTEP). See
-    /// 06_Akrophobie_Goldstandard.md for the full rationale and source citations.
+    /// Generates the acrophobia scenario as ScriptableObject assets: a ladder of height
+    /// levels that vary edge protection, underfoot surface, safety signal and task.
+    ///
+    /// Progression is driven by expectancy violation at runtime (see
+    /// ExposureSessionController), not encoded here -- this factory only declares the
+    /// levels. Level content is own scenario design informed by the acrophobia
+    /// literature; see README for what is sourced and what is design.
     /// </summary>
     public static class AcrophobiaScenarioFactory
     {
@@ -24,15 +25,12 @@ namespace Exposure.EditorTools
 
             var scenario = ScriptableObject.CreateInstance<HeightScenarioDefinition>();
             scenario.scenarioName = "Acrophobia - High-Rise Rooftop & Glass Elevator";
-            scenario.description = "Gold-standard VR exposure (Freeman et al. 2018): up to 5 sittings, " +
-                                   "habituation-gated ascent through height levels. Anxiety is controlled " +
-                                   "via railing/edge protection, surface exposure and a visible safety net, " +
-                                   "not via floor count alone.";
-            scenario.source = "Freeman et al. (2018), Lancet Psychiatry; Francova et al. (2025), JBTEP";
+            scenario.description = "Graded height exposure run as behavioural experiments. Intensity is " +
+                                   "controlled via edge protection, underfoot surface and a visible safety " +
+                                   "net, not via floor count alone.";
+            scenario.source = "Level design informed by acrophobia literature; progression follows " +
+                              "inhibitory-learning principles (Craske et al. 2014)";
             scenario.maxHeartRateAbort = 200f;
-            scenario.pacedBreathingSeconds = 0f; // not part of the Freeman protocol
-            scenario.maxSessions = 5;
-            scenario.maxSessionMinutes = 24f;
 
             scenario.steps.Add(Level("level1", "Level 1 - low floor, railing, stand",
                 1, RailingMode.SolidRailing, SurfaceType.Solid, TaskType.Stand, true, 0.05f));
@@ -65,14 +63,9 @@ namespace Exposure.EditorTools
             var step = ScriptableObject.CreateInstance<HeightStepDefinition>();
             step.stepId = id;
             step.title = title;
-            step.habituationGated = true;
-            step.vasGateThreshold = 30f;
-            step.consecutiveReadingsRequired = 2;
-            step.gateCheckIntervalSeconds = 45f;
-            step.durationSeconds = 480f; // safety time cap per level, not from the source paper
-            step.askAnxietyAtStart = true;
-            step.askAnxietyAtEnd = false; // redundant: the gate's final passing reading already is the end reading
-            step.guidingQuestion = "What changed compared to the previous level?";
+            step.instruction = InstructionFor(task);
+            step.durationSeconds = 120f; // fallback only, used when no task detection is wired
+            step.guidingQuestion = "What did you expect would happen, and what actually happened?";
             step.state = new HeightState
             {
                 floorIndex = floorIndex,
@@ -83,6 +76,17 @@ namespace Exposure.EditorTools
                 windIntensity = wind
             };
             return step;
+        }
+
+        private static string InstructionFor(TaskType task)
+        {
+            switch (task)
+            {
+                case TaskType.ApproachEdge: return "When you are ready, walk slowly towards the edge.";
+                case TaskType.LookDown:     return "Step to the edge and look down.";
+                case TaskType.CrossPlank:   return "Cross the plank at your own pace.";
+                default:                    return "Stand here and take in the space around you.";
+            }
         }
     }
 }

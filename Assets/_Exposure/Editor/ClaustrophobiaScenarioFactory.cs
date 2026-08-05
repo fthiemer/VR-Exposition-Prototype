@@ -34,7 +34,6 @@ namespace Exposure.EditorTools
                                    "possibility (hatch), lighting and safety signal (ladder).";
             scenario.source = "Mies (2025), University of Mainz";
             scenario.maxHeartRateAbort = 200f;
-            scenario.pacedBreathingSeconds = 180f;
 
             scenario.steps.Add(Step("slot2", "Slot 2 - bright, ladder, hatch open",
                 LightingMode.CeilingLampBright, HatchState.OpenWithView, true, false, false));
@@ -68,8 +67,6 @@ namespace Exposure.EditorTools
             step.stepId = id;
             step.title = title;
             step.durationSeconds = 300f;
-            step.askAnxietyAtStart = true;
-            step.askAnxietyAtEnd = true;
             step.guidingQuestion = "What changed in the room compared to the previous slot?";
             step.state = new RoomState
             {
