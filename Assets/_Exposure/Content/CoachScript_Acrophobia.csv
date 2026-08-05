@@ -1,0 +1,18 @@
+id,phase,task_type,text_en,voice_direction
+coach_intro_session1,onboarding_first,,"Hi. I'm here to guide you through this session. We're going to work through a series of heights together -- not to force anything, but to find out what actually happens when you face them, step by step. You're always in control. If it gets too much, you can stop at any time, no explanation needed.",calm, warm, unhurried
+coach_intro_session1_mechanism,onboarding_first,,"Before we start: your mind is probably predicting something bad will happen up there. That's normal. What we're doing here is simple -- you make a prediction, you test it, and you notice what really happens. That's how this works.",calm, slightly encouraging
+coach_intro_resume,onboarding_resume,,"Welcome back. Last time you reached floor {last_floor}. We'll pick up right there -- no need to start over.",warm, brief
+coach_ready_screen,ready_screen,,"Ready for the next level?",neutral, inviting
+coach_elevator_ascending,elevator_transition,,"Here we go.",light, brief
+task_instruction_stand,level_start,Stand,"Just stand here for a moment. Notice the space around you. Notice what your mind is telling you might happen.",neutral, observational
+task_instruction_approach_edge,level_start,ApproachEdge,"When you're ready, walk slowly toward the edge. Stop whenever you want -- there's no target you have to hit.",calm, non-directive
+task_instruction_look_down,level_start,LookDown,"Take a moment and look down. What did you expect to feel? Compare that to what you're actually feeling right now.",calm, reflective
+task_instruction_cross_plank,level_start,CrossPlank,"Cross the plank at your own pace. You can stop or turn back at any point.",calm, reassuring
+vas_prompt_start,vas,,"Before we begin -- how anxious do you feel right now, on a scale from 0 to 100?",neutral, procedural
+vas_prompt_gate,vas,,"How anxious do you feel right now?",neutral, brief
+vas_prompt_end,vas,,"And now, at the end of this level -- how anxious do you feel?",neutral, procedural
+level_advance_confirmation,gate_passed,,"Notice that: the feeling came down on its own, without you doing anything except staying here. That's worth remembering.",calm, affirming
+level_advance_cap_reached,gate_cap,,"That's enough for this level for now. Moving on -- what you noticed here still counts, even if the feeling didn't fully settle.",calm, non-judgmental
+session_end_summary,session_end,,"That's it for today. You reached floor {reached_floor}. Next time, we'll continue from there.",warm, closing
+program_complete,program_end,,"You've completed the full programme. Take a moment to notice how different this feels compared to where you started.",warm, closing
+abort_heart_rate,abort,,"We're stopping here for your safety. That's the right call, not a setback.",calm, reassuring
