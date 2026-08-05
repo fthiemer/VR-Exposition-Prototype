@@ -1,17 +1,18 @@
 namespace Exposure
 {
     /// <summary>
-    /// Abstraktion für die Anwendung eines RoomState auf die konkrete Szene.
-    /// Entkoppelt Ablaufsteuerung von der Raumdarstellung -> pro Szenario eine
-    /// eigene Implementierung (Klaustrophobie-Keller, Höhe, ...), gleiche Steuerung.
-    /// Nahtloser Wechsel OHNE Brille-Absetzen (behebt die 30-s-Bruchstelle der Studie).
+    /// Abstraction for applying a scenario-specific environment state to the scene.
+    /// Decouples the generic session flow from the concrete environment representation
+    /// -> one implementation per scenario (claustrophobia room, height platform, ...),
+    /// same generic session controller. Seamless transitions without removing the
+    /// headset (fixes the 30s scene-cut break point from the reference study).
     /// </summary>
-    public interface IEnvironmentController
+    public interface IEnvironmentController<TState>
     {
         /// <summary>
-        /// Wendet den Zielzustand an. <paramref name="instant"/> = true springt
-        /// hart (z. B. beim Initialisieren), sonst weiche Überblendung.
+        /// Applies the target state. <paramref name="instant"/> = true jumps immediately
+        /// (e.g. on init), otherwise a smooth transition is expected.
         /// </summary>
-        void Apply(RoomState state, bool instant);
+        void Apply(TState state, bool instant);
     }
 }

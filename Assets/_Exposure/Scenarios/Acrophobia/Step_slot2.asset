@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0fbba98c94a5854ebb0b9f09bb40dd5, type: 3}
+  m_Name: Step_slot2
+  m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightStepDefinition
+  stepId: slot2
+  title: Slot 2 - mid floor, railing, approach edge
+  instruction: 
+  durationSeconds: 300
+  isBaselineBreathing: 0
+  askAnxietyAtStart: 1
+  askAnxietyAtEnd: 1
+  state:
+    floorIndex: 3
+    railing: 0
+    surface: 0
+    task: 1
+    safetyNetVisible: 1
+    windIntensity: 0.1
+  guidingQuestion: What changed compared to the previous slot?

@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b6c02c08de5273f4fa9d7aab3c6d8691, type: 3}
+  m_Script: {fileID: 11500000, guid: 2faa6c47b982d6d4b9758e955e0ed810, type: 3}
   m_Name: Step_slot7
-  m_EditorClassIdentifier: Exposure.Runtime::Exposure.ExposureStepDefinition
+  m_EditorClassIdentifier: Exposure.Runtime::Exposure.RoomStepDefinition
   stepId: slot7
   title: Slot 7 - small floor lamp, ladder, hatch closed
   instruction: 
@@ -19,7 +19,7 @@ MonoBehaviour:
   isBaselineBreathing: 0
   askAnxietyAtStart: 1
   askAnxietyAtEnd: 1
-  roomState:
+  state:
     lighting: 1
     hatch: 1
     ladderPresent: 1

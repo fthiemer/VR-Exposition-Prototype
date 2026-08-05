@@ -6,28 +6,28 @@ using UnityEngine;
 namespace Exposure.EditorTools
 {
     /// <summary>
-    /// Erzeugt per Menüklick das Studien-getreue Klaustrophobie-Szenario (Mies 2025,
-    /// Kap. 2.3) als ScriptableObject-Assets: 6 Abstufungen à 5 min, Baseline-Taktatmung
-    /// 3 min, Abbruch bei 200 bpm. Demonstriert die schnelle, datengetriebene Iteration.
+    /// Generates the study-faithful claustrophobia scenario (Mies 2025, Ch. 2.3) as
+    /// ScriptableObject assets: 6 steps of 5 min each, 3 min baseline paced breathing,
+    /// abort at 200 bpm. Demonstrates fast, data-driven iteration.
     ///
-    /// VR-Slots der Arbeit:
-    ///  2: hell (Deckenlampe) | Leiter | Luke offen
-    ///  3: hell (Deckenlampe) | Leiter | Luke geschlossen
-    ///  4: hell (Deckenlampe) | ohne Leiter | Luke offen
-    ///  5: hell (Deckenlampe) | ohne Leiter | Luke geschlossen
-    ///  6: dunkel | Leiter | Luke offen
-    ///  7: kleine Stehlampe | Leiter | Luke geschlossen
+    /// Study VR slots:
+    ///  2: bright (ceiling lamp) | ladder | hatch open
+    ///  3: bright (ceiling lamp) | ladder | hatch closed
+    ///  4: bright (ceiling lamp) | no ladder | hatch open
+    ///  5: bright (ceiling lamp) | no ladder | hatch closed
+    ///  6: dark | ladder | hatch open
+    ///  7: small floor lamp | ladder | hatch closed
     /// </summary>
     public static class ClaustrophobiaScenarioFactory
     {
-        private const string Folder = "Assets/_Exposure/Scenarios";
+        private const string Folder = "Assets/_Exposure/Scenarios/Claustrophobia";
 
         [MenuItem("Exposure/Generate Claustrophobia Study Scenario")]
         public static void CreateClaustrophobiaScenario()
         {
             Directory.CreateDirectory(Folder);
 
-            var scenario = ScriptableObject.CreateInstance<ExposureScenarioDefinition>();
+            var scenario = ScriptableObject.CreateInstance<RoomScenarioDefinition>();
             scenario.scenarioName = "Claustrophobia - Basement Room (Study: Mies 2025)";
             scenario.description = "Study-faithful VR exposure: 6 steps of 5 min each, " +
                                    "introductory paced breathing 3 min. Anxiety is controlled via escape " +
@@ -61,17 +61,17 @@ namespace Exposure.EditorTools
             Debug.Log("[Exposure] Claustrophobia scenario generated under " + Folder);
         }
 
-        private static ExposureStepDefinition Step(string id, string title, LightingMode light,
+        private static RoomStepDefinition Step(string id, string title, LightingMode light,
             HatchState hatch, bool ladder, bool doorClosed, bool doorLocked)
         {
-            var step = ScriptableObject.CreateInstance<ExposureStepDefinition>();
+            var step = ScriptableObject.CreateInstance<RoomStepDefinition>();
             step.stepId = id;
             step.title = title;
             step.durationSeconds = 300f;
             step.askAnxietyAtStart = true;
             step.askAnxietyAtEnd = true;
             step.guidingQuestion = "What changed in the room compared to the previous slot?";
-            step.roomState = new RoomState
+            step.state = new RoomState
             {
                 lighting = light,
                 hatch = hatch,

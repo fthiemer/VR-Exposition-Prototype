@@ -10,7 +10,7 @@ namespace Exposure
     ///
     /// Raummaße gemäß Studie: 1,70 m x 1,79 m Grundfläche, 1,71 m Höhe.
     /// </summary>
-    public class ClaustrophobiaRoomController : MonoBehaviour, IEnvironmentController
+    public class ClaustrophobiaRoomController : MonoBehaviour, IEnvironmentController<RoomState>
     {
         [Header("Lighting")]
         [SerializeField] private Light ceilingLamp;

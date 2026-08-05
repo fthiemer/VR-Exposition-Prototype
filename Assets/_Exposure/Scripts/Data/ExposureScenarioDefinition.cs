@@ -4,21 +4,22 @@ using UnityEngine;
 namespace Exposure
 {
     /// <summary>
-    /// Ein vollständiges Expositions-Szenario als geordnete Liste von Abstufungen.
-    /// Austauschbar/erweiterbar: Klaustrophobie ist das erste Szenario, weitere
-    /// (z. B. Höhe, Flugangst) implementieren dasselbe Datenschema.
+    /// A complete exposure scenario as an ordered list of steps, generic over the
+    /// scenario-specific environment state. Swappable/extensible: acrophobia and
+    /// claustrophobia both implement this same data schema via a closed concrete
+    /// subclass, sharing the entire session flow, VAS prompting, biosignal monitoring,
+    /// and logging without any changes to that shared code.
     /// </summary>
-    [CreateAssetMenu(fileName = "Scenario_", menuName = "Exposure/Exposure Scenario")]
-    public class ExposureScenarioDefinition : ScriptableObject
+    public abstract class ExposureScenarioDefinition<TState> : ScriptableObject
     {
         [Header("Metadata")]
-        public string scenarioName = "Claustrophobia - Basement Room";
+        public string scenarioName = "New Scenario";
 
         [TextArea(2, 4)]
         public string description;
 
         [Tooltip("Source/basis for traceability (scientific grounding).")]
-        public string source = "Mies (2025), PhD thesis, University of Mainz";
+        public string source;
 
         [Header("Timing")]
         [Tooltip("Safety abort criterion: heart rate in bpm (study: 200).")]
@@ -28,6 +29,6 @@ namespace Exposure
         public float pacedBreathingSeconds = 180f;
 
         [Header("Steps (in order)")]
-        public List<ExposureStepDefinition> steps = new List<ExposureStepDefinition>();
+        public List<ExposureStepDefinition<TState>> steps = new List<ExposureStepDefinition<TState>>();
     }
 }

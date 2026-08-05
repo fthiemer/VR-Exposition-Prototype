@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 341cdf250865cd244b527d2a889c2ca4, type: 3}
+  m_Name: Scenario_Acrophobia
+  m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightScenarioDefinition
+  scenarioName: Acrophobia - High-Rise Rooftop & Glass Elevator
+  description: 'Gold-standard-inspired VR exposure: ascending floor levels with decreasing
+    edge protection and increasing task demand. Anxiety is controlled via railing/edge
+    protection, surface exposure and a visible safety net, not via floor count alone.'
+  source: Freeman et al. (2018), Lancet Psychiatry; Francova et al. (2025), JBTEP
+  maxHeartRateAbort: 200
+  pacedBreathingSeconds: 180
+  steps:
+  - {fileID: 11400000, guid: 0a20bb0bb496969429d893591fcecd4a, type: 2}
+  - {fileID: 11400000, guid: 7329011f16676be4686fa8c3bcafc925, type: 2}
+  - {fileID: 11400000, guid: 506c7fcc83f491d4b832850f920b4b0e, type: 2}
+  - {fileID: 11400000, guid: 0e1918b134ff04c4b8245f07d5c72e93, type: 2}
+  - {fileID: 11400000, guid: 997196b464299d34f87ec42622291654, type: 2}
+  - {fileID: 11400000, guid: 8d6135bb777599449842f41e97c99e61, type: 2}

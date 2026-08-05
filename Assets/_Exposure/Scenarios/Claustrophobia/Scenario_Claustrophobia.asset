@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7a99d87b4d623f94698e23a450000a79, type: 3}
+  m_Script: {fileID: 11500000, guid: d27a783c974712940a6870254b8394b0, type: 3}
   m_Name: Scenario_Claustrophobia
-  m_EditorClassIdentifier: Exposure.Runtime::Exposure.ExposureScenarioDefinition
+  m_EditorClassIdentifier: Exposure.Runtime::Exposure.RoomScenarioDefinition
   scenarioName: 'Claustrophobia - Basement Room (Study: Mies 2025)'
   description: 'Study-faithful VR exposure: 6 steps of 5 min each, introductory paced
     breathing 3 min. Anxiety is controlled via escape possibility (hatch), lighting
@@ -20,9 +20,9 @@ MonoBehaviour:
   maxHeartRateAbort: 200
   pacedBreathingSeconds: 180
   steps:
-  - {fileID: 11400000, guid: 9406cbd828a4fe242b32577edb77dc0c, type: 2}
-  - {fileID: 11400000, guid: 9c203858bb5b6854db169626a9c35b77, type: 2}
-  - {fileID: 11400000, guid: e29a96f0fe84e64419f7ef9546bdc4f7, type: 2}
-  - {fileID: 11400000, guid: 4beadbe7251614c4d858b274d3581151, type: 2}
-  - {fileID: 11400000, guid: b12ca551c2abaf346981becd69981543, type: 2}
-  - {fileID: 11400000, guid: a7f5ec2ce32ffd642badec741fc64d19, type: 2}
+  - {fileID: 11400000, guid: 1ad61e5dbbf81de489180edde3b8c4b7, type: 2}
+  - {fileID: 11400000, guid: f49d5258f8c964c4dbd363b768eeb965, type: 2}
+  - {fileID: 11400000, guid: 116677ef10c9b604baad0310ba910b78, type: 2}
+  - {fileID: 11400000, guid: c5065b508cbd9d042a632d2cc7424a7d, type: 2}
+  - {fileID: 11400000, guid: 479f77016b00bf844841f5ad47255800, type: 2}
+  - {fileID: 11400000, guid: 7b44fa42bd53f074e80684e4c9b5cd94, type: 2}

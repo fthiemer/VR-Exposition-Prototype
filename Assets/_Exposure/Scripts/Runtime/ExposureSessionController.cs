@@ -16,55 +16,62 @@ namespace Exposure
     }
 
     /// <summary>
-    /// Herzstück des Prototyps: steuert den Ablauf eines Expositions-Szenarios als
-    /// State Machine (Onboarding -> Taktatmung -> Slots 1..n -> Abschluss).
+    /// Core of the prototype: drives an exposure scenario as a state machine
+    /// (Onboarding -> paced breathing -> Slots 1..n -> completion), generic over the
+    /// scenario-specific environment state <typeparamref name="TState"/>.
     ///
-    /// - datengetrieben über ein <see cref="ExposureScenarioDefinition"/>
-    /// - nahtlose Zustandswechsel ohne Brille-Absetzen (via IEnvironmentController)
-    /// - VAS-Angstabfrage zu Slot-Beginn/-Ende (via IAnxietyPrompt)
-    /// - HF-Überwachung mit Abbruch bei Grenzwert (via IBiosignalSource)
-    /// - vollständige Protokollierung (via ISessionLogger)
+    /// - data-driven via an <see cref="ExposureScenarioDefinition{TState}"/>
+    /// - seamless state transitions without removing the headset (via IEnvironmentController)
+    /// - VAS anxiety prompt at slot start/end (via IAnxietyPrompt)
+    /// - heart-rate monitoring with abort at threshold (via IBiosignalSource)
+    /// - full session logging (via ISessionLogger)
     ///
-    /// Die Abhängigkeiten sind als Interfaces entkoppelt -> gut testbar & erweiterbar.
+    /// Dependencies are decoupled via interfaces -> testable and extensible. To add a new
+    /// scenario, implement IEnvironmentController&lt;TNewState&gt; and derive one closed,
+    /// concrete subclass of this controller (see RoomExposureSessionController,
+    /// HeightExposureSessionController) -- no changes to this shared flow are needed.
     /// </summary>
-    public class ExposureSessionController : MonoBehaviour
+    public abstract class ExposureSessionController<TState> : MonoBehaviour
     {
         [Header("Scenario")]
-        [SerializeField] private ExposureScenarioDefinition scenario;
+        [SerializeField] private ExposureScenarioDefinition<TState> scenario;
         [SerializeField] private bool startOnPlay = false;
 
         [Header("Dependencies (must implement the respective interfaces)")]
-        [SerializeField] private MonoBehaviour environmentControllerBehaviour; // IEnvironmentController
+        [SerializeField] private MonoBehaviour environmentControllerBehaviour; // IEnvironmentController<TState>
         [SerializeField] private MonoBehaviour anxietyPromptBehaviour;         // IAnxietyPrompt
         [SerializeField] private MonoBehaviour biosignalSourceBehaviour;       // IBiosignalSource
         [SerializeField] private MonoBehaviour sessionLoggerBehaviour;         // ISessionLogger
 
-        // --- Events für UI/Audio ---
+        // --- Events for UI/audio ---
         public event Action<SessionState> OnStateChanged;
-        public event Action<int, ExposureStepDefinition> OnStepChanged;
-        public event Action<float, float> OnTimerTick; // (verstrichen, gesamt)
+        public event Action<int, ExposureStepDefinition<TState>> OnStepChanged;
+        public event Action<float, float> OnTimerTick; // (elapsed, total)
 
         public SessionState State { get; private set; } = SessionState.Idle;
         public int CurrentStepIndex { get; private set; } = -1;
 
-        private IEnvironmentController _env;
+        private IEnvironmentController<TState> _env;
         private IAnxietyPrompt _prompt;
         private IBiosignalSource _bio;
         private ISessionLogger _logger;
 
         private int? _lastAnswer;
 
+        /// <summary>Environment state to apply before the first step (e.g. entry level).</summary>
+        protected abstract TState DefaultState { get; }
+
         private void Awake()
         {
-            _env    = environmentControllerBehaviour as IEnvironmentController;
+            _env    = environmentControllerBehaviour as IEnvironmentController<TState>;
             _prompt = anxietyPromptBehaviour as IAnxietyPrompt;
             _bio    = biosignalSourceBehaviour as IBiosignalSource;
             _logger = sessionLoggerBehaviour as ISessionLogger;
 
             if (environmentControllerBehaviour != null && _env == null)
-                Debug.LogError("[Exposure] Zugewiesenes Environment-Objekt implementiert IEnvironmentController nicht.");
+                Debug.LogError("[Exposure] Assigned environment object does not implement IEnvironmentController.");
             if (anxietyPromptBehaviour != null && _prompt == null)
-                Debug.LogError("[Exposure] Zugewiesenes Prompt-Objekt implementiert IAnxietyPrompt nicht.");
+                Debug.LogError("[Exposure] Assigned prompt object does not implement IAnxietyPrompt.");
         }
 
         private void Start()
@@ -74,7 +81,7 @@ namespace Exposure
 
         public void StartSession()
         {
-            if (scenario == null) { Debug.LogError("[Exposure] Kein Szenario zugewiesen."); return; }
+            if (scenario == null) { Debug.LogError("[Exposure] No scenario assigned."); return; }
             if (State != SessionState.Idle && State != SessionState.Completed && State != SessionState.Aborted) return;
             StopAllCoroutines();
             StartCoroutine(RunSession());
@@ -85,11 +92,11 @@ namespace Exposure
             _logger?.BeginSession(scenario.scenarioName);
 
             SetState(SessionState.Onboarding);
-            // Startzustand hart setzen (Person sieht sofort korrekten Raum).
-            _env?.Apply(RoomState.Default, instant: true);
+            // Hard-set entry state (participant sees the correct scene immediately).
+            _env?.Apply(DefaultState, instant: true);
             yield return null;
 
-            // Optionale einleitende Taktatmung.
+            // Optional introductory paced breathing.
             if (scenario.pacedBreathingSeconds > 0f)
             {
                 SetState(SessionState.PacedBreathing);
@@ -105,23 +112,23 @@ namespace Exposure
                 CurrentStepIndex = i;
                 OnStepChanged?.Invoke(i, step);
 
-                // Raumzustand weich überblenden (nahtlos, ohne Brille abzusetzen).
-                _env?.Apply(step.roomState, instant: false);
+                // Soft-blend environment state (seamless, no headset removal).
+                _env?.Apply(step.state, instant: false);
                 _logger?.LogStepStart(i, step.stepId, CurrentHeartRate());
 
-                // VAS zu Beginn.
+                // VAS at start.
                 if (step.askAnxietyAtStart)
                 {
                     yield return AskAnxiety(i, step, "start");
                     if (State == SessionState.Aborted) yield break;
                 }
 
-                // Slot-Dauer laufen lassen (mit HF-Überwachung).
+                // Run slot duration (with heart-rate monitoring).
                 SetState(SessionState.StepActive);
                 yield return RunTimer(step.durationSeconds);
                 if (State == SessionState.Aborted) yield break;
 
-                // VAS am Ende.
+                // VAS at end.
                 if (step.askAnxietyAtEnd)
                 {
                     yield return AskAnxiety(i, step, "end");
@@ -135,7 +142,7 @@ namespace Exposure
             _logger?.EndSession();
         }
 
-        /// <summary>Timer mit laufender HF-Überwachung und Abbruchkriterium.</summary>
+        /// <summary>Timer with ongoing heart-rate monitoring and abort criterion.</summary>
         private IEnumerator RunTimer(float durationSeconds)
         {
             float elapsed = 0f;
@@ -143,7 +150,7 @@ namespace Exposure
             {
                 if (ShouldAbort())
                 {
-                    Abort($"Herzfrequenz >= {scenario.maxHeartRateAbort} bpm");
+                    Abort($"Heart rate >= {scenario.maxHeartRateAbort} bpm");
                     yield break;
                 }
                 elapsed += Time.deltaTime;
@@ -152,14 +159,14 @@ namespace Exposure
             }
         }
 
-        private IEnumerator AskAnxiety(int index, ExposureStepDefinition step, string phase)
+        private IEnumerator AskAnxiety(int index, ExposureStepDefinition<TState> step, string phase)
         {
             SetState(SessionState.AwaitingAnxiety);
             _lastAnswer = null;
 
             if (_prompt == null)
             {
-                // Ohne UI-Prompt (z. B. im Editor-Test) überspringen.
+                // No UI prompt assigned (e.g. blockout/editor testing) -> skip.
                 _lastAnswer = -1;
             }
             else
@@ -168,7 +175,7 @@ namespace Exposure
                 _prompt.Ask(label, v => _lastAnswer = Mathf.Clamp(v, 0, 100));
                 while (_lastAnswer == null)
                 {
-                    if (ShouldAbort()) { Abort($"Herzfrequenz >= {scenario.maxHeartRateAbort} bpm"); yield break; }
+                    if (ShouldAbort()) { Abort($"Heart rate >= {scenario.maxHeartRateAbort} bpm"); yield break; }
                     yield return null;
                 }
             }
@@ -189,7 +196,7 @@ namespace Exposure
             _logger?.LogAbort(reason, CurrentHeartRate());
             _logger?.EndSession();
             SetState(SessionState.Aborted);
-            Debug.LogWarning($"[Exposure] Abbruch: {reason}");
+            Debug.LogWarning($"[Exposure] Aborted: {reason}");
         }
 
         private void SetState(SessionState s)
