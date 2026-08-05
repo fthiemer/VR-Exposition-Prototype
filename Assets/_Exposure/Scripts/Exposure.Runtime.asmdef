@@ -1,7 +1,10 @@
 {
     "name": "Exposure.Runtime",
     "rootNamespace": "Exposure",
-    "references": [],
+    "references": [
+        "UnityEngine.UI",
+        "Unity.XR.Interaction.Toolkit"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
