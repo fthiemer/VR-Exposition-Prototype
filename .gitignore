@@ -255,3 +255,9 @@ sysinfo.txt
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/unity,jetbrains,rider,visualstudiocode
+### Commercial third-party assets (local only) ###
+# Unity Asset Store EULA forbids redistributing these in extractable form,
+# and they exceed GitHub file/LFS limits (~9 GB). Import them locally; the
+# project runs without them using the primitive blockout.
+/[Aa]ssets/3rd Party Assets/
+/[Aa]ssets/3rd Party Assets.meta
