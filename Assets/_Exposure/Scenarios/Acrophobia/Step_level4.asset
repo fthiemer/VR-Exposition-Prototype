@@ -10,15 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f0fbba98c94a5854ebb0b9f09bb40dd5, type: 3}
-  m_Name: Step_slot4
+  m_Name: Step_level4
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightStepDefinition
-  stepId: slot4
-  title: Slot 4 - higher floor, glass barrier, grating floor
+  stepId: level4
+  title: Level 4 - higher floor, glass barrier, grating floor
   instruction: 
-  durationSeconds: 300
+  durationSeconds: 480
   isBaselineBreathing: 0
+  habituationGated: 1
+  vasGateThreshold: 30
+  consecutiveReadingsRequired: 2
+  gateCheckIntervalSeconds: 45
   askAnxietyAtStart: 1
-  askAnxietyAtEnd: 1
+  askAnxietyAtEnd: 0
   state:
     floorIndex: 6
     railing: 1
@@ -26,4 +30,4 @@ MonoBehaviour:
     task: 2
     safetyNetVisible: 1
     windIntensity: 0.3
-  guidingQuestion: What changed compared to the previous slot?
+  guidingQuestion: What changed compared to the previous level?

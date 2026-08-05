@@ -25,8 +25,15 @@ namespace Exposure
         [Tooltip("Safety abort criterion: heart rate in bpm (study: 200).")]
         public float maxHeartRateAbort = 200f;
 
-        [Tooltip("Duration of the introductory paced breathing in seconds (study: 180 s).")]
+        [Tooltip("Duration of the introductory paced breathing in seconds (study: 180 s). 0 to skip.")]
         public float pacedBreathingSeconds = 180f;
+
+        [Header("Multi-Session (optional)")]
+        [Tooltip("Maximum number of separate sittings. 1 = single-sitting scenario.")]
+        public int maxSessions = 1;
+
+        [Tooltip("Soft time budget per sitting in minutes before pausing for the next session (0 = no cap, run to completion in one sitting).")]
+        public float maxSessionMinutes = 0f;
 
         [Header("Steps (in order)")]
         public List<ExposureStepDefinition<TState>> steps = new List<ExposureStepDefinition<TState>>();

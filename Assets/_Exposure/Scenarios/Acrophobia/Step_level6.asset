@@ -10,20 +10,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f0fbba98c94a5854ebb0b9f09bb40dd5, type: 3}
-  m_Name: Step_slot3
+  m_Name: Step_level6
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightStepDefinition
-  stepId: slot3
-  title: Slot 3 - higher floor, glass barrier, look down
+  stepId: level6
+  title: Level 6 - rooftop, open edge, cross plank
   instruction: 
-  durationSeconds: 300
+  durationSeconds: 480
   isBaselineBreathing: 0
+  habituationGated: 1
+  vasGateThreshold: 30
+  consecutiveReadingsRequired: 2
+  gateCheckIntervalSeconds: 45
   askAnxietyAtStart: 1
-  askAnxietyAtEnd: 1
+  askAnxietyAtEnd: 0
   state:
-    floorIndex: 5
-    railing: 1
-    surface: 0
-    task: 2
-    safetyNetVisible: 1
-    windIntensity: 0.2
-  guidingQuestion: What changed compared to the previous slot?
+    floorIndex: 10
+    railing: 2
+    surface: 3
+    task: 3
+    safetyNetVisible: 0
+    windIntensity: 0.5
+  guidingQuestion: What changed compared to the previous level?
