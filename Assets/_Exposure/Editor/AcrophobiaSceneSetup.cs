@@ -177,6 +177,8 @@ namespace Exposure.EditorTools
                 }
             }
 
+            if (burst != null) ScaleBurstToRoomScale(burst.gameObject);
+
             var particleSo = new SerializedObject(particleFeedback);
             particleSo.FindProperty("playAt").objectReferenceValue = marker;
             if (burst != null)
@@ -311,6 +313,31 @@ namespace Exposure.EditorTools
             AssetDatabase.CreateAsset(mat, path);
             return mat;
         }
+
+/// <summary>
+        /// Resizes the confetti so it is actually visible here.
+        ///
+        /// The XRI prefab emits particles of 0.001 units -- one millimetre. In their demo the
+        /// system sits on a scaled-up parent, but dropped into a room-scale scene at 1 unit =
+        /// 1 metre the burst plays correctly and is simply too small to see, which is why it
+        /// looked like nothing happened on completion.
+        /// </summary>
+        private static void ScaleBurstToRoomScale(GameObject burstRoot)
+        {
+            foreach (var ps in burstRoot.GetComponentsInChildren<ParticleSystem>(true))
+            {
+                var main = ps.main;
+                main.startSize = new ParticleSystem.MinMaxCurve(0.04f, 0.09f);
+                main.startSpeed = new ParticleSystem.MinMaxCurve(1.6f, 3.2f);
+                main.startLifetime = new ParticleSystem.MinMaxCurve(1.6f, 2.8f);
+                main.gravityModifier = 0.55f; // confetti should fall, not hang
+                main.maxParticles = 160;
+
+                var emission = ps.emission;
+                emission.SetBurst(0, new ParticleSystem.Burst(0f, 120));
+            }
+        }
+
 
     }
 }
