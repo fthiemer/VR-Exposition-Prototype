@@ -27,6 +27,12 @@ namespace Exposure.UI
         [SerializeField] private Transform head;
         [SerializeField, Min(0.3f)] private float distanceFromHead = 0.8f;
         [SerializeField] private float verticalOffset = -0.1f;
+        [Tooltip("Used instead of the tracked head height while it looks implausible (e.g. before the XR pose has settled after session start).")]
+        [SerializeField] private float fallbackEyeHeight = 1.6f;
+        [Tooltip("Head heights below this are treated as not-yet-tracked and get the fallback instead.")]
+        [SerializeField] private float minPlausibleHeadHeight = 1.0f;
+        [Tooltip("While a panel is visible, its position is re-checked on this interval so it self-corrects once real tracking data arrives.")]
+        [SerializeField] private float revalidateIntervalSeconds = 2f;
 
         [Header("Panel")]
         [SerializeField] private Vector2 panelSize = new Vector2(0.7f, 0.5f);
@@ -42,8 +48,7 @@ namespace Exposure.UI
         private RectTransform _buttonArea;
         private readonly List<GameObject> _buttons = new List<GameObject>();
 
-        private const int FramesToWaitForFirstValidPose = 5;
-        private bool _firstPlacementDone;
+        private Coroutine _revalidateRoutine;
 
         private Transform Head
         {
@@ -243,37 +248,27 @@ private void ShowYesNo(string question, Action<bool> onAnswered)
 
 private void Show()
         {
-            if (_firstPlacementDone)
-            {
-                PlaceInFrontOfHead();
-                _canvas.gameObject.SetActive(true);
-                return;
-            }
-
-            StartCoroutine(ShowAfterInitialPoseSettles());
-        }
-
-private IEnumerator ShowAfterInitialPoseSettles()
-        {
-            // The XR camera's tracked pose is not valid yet on the very first frames after the
-            // session starts, so placing the panel immediately anchors it near the floor. Waiting
-            // a few frames lets the OpenXR tracked pose driver update the head transform first.
-            for (int i = 0; i < FramesToWaitForFirstValidPose; i++)
-                yield return null;
-
-            _firstPlacementDone = true;
             PlaceInFrontOfHead();
             _canvas.gameObject.SetActive(true);
+            if (_revalidateRoutine == null)
+                _revalidateRoutine = StartCoroutine(RevalidatePlacementPeriodically());
         }
 
 
-        private void Hide()
+
+
+private void Hide()
         {
             ClearButtons();
             if (_canvas != null) _canvas.gameObject.SetActive(false);
+            if (_revalidateRoutine != null)
+            {
+                StopCoroutine(_revalidateRoutine);
+                _revalidateRoutine = null;
+            }
         }
 
-        private void PlaceInFrontOfHead()
+private void PlaceInFrontOfHead()
         {
             if (Head == null) return;
             Vector3 forward = Head.forward;
@@ -281,9 +276,27 @@ private IEnumerator ShowAfterInitialPoseSettles()
             if (forward.sqrMagnitude < 0.001f) forward = Vector3.forward;
             forward.Normalize();
 
-            _canvas.transform.position = Head.position + forward * distanceFromHead + Vector3.up * verticalOffset;
+            // The tracked head height can be implausible right after session start (pose not
+            // settled yet) -- fall back to a plausible eye height instead of sinking the panel
+            // into the floor. RevalidatePlacementPeriodically() re-runs this on a timer, so the
+            // panel self-corrects to the real head height once tracking catches up.
+            float headY = Head.position.y >= minPlausibleHeadHeight ? Head.position.y : fallbackEyeHeight;
+            Vector3 headPos = new Vector3(Head.position.x, headY, Head.position.z);
+
+            _canvas.transform.position = headPos + forward * distanceFromHead + Vector3.up * verticalOffset;
             _canvas.transform.rotation = Quaternion.LookRotation(forward, Vector3.up);
         }
+
+private IEnumerator RevalidatePlacementPeriodically()
+        {
+            var wait = new WaitForSeconds(revalidateIntervalSeconds);
+            while (true)
+            {
+                yield return wait;
+                PlaceInFrontOfHead();
+            }
+        }
+
 
         private static string TextForOutcome(FearedOutcomeCatalog catalog, string id)
         {
