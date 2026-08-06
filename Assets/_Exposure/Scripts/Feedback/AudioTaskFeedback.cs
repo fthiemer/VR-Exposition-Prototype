@@ -43,6 +43,8 @@ namespace Exposure
         private AudioSource _oneShotSource;
         private AudioSource _loopSource;
         private AudioClip _runtimeHum;
+        private AudioClip _runtimeStart;
+        private AudioClip _runtimeComplete;
         private bool _humming;
 
         private void Awake()
@@ -60,10 +62,10 @@ namespace Exposure
             _loopSource.clip = holdLoopClip != null ? holdLoopClip : GetOrCreatePlaceholderHum();
         }
 
-        public void TaskStarted(TaskType task)
+public void TaskStarted(TaskType task)
         {
             StopHum();
-            if (taskStartClip != null) _oneShotSource.PlayOneShot(taskStartClip);
+            _oneShotSource.PlayOneShot(taskStartClip != null ? taskStartClip : StartTone());
         }
 
         public void TaskProgress(float progress01, bool conditionHeld)
@@ -83,10 +85,10 @@ namespace Exposure
             }
         }
 
-        public void TaskCompleted()
+public void TaskCompleted()
         {
             StopHum();
-            if (completedClip != null) _oneShotSource.PlayOneShot(completedClip);
+            _oneShotSource.PlayOneShot(completedClip != null ? completedClip : CompletionChime());
         }
 
         public void TaskCancelled() => StopHum();
@@ -123,5 +125,60 @@ namespace Exposure
             _runtimeHum.SetData(data, 0);
             return _runtimeHum;
         }
+
+/// <summary>
+        /// Placeholder attention tone for the task start: one short note, no rise or fall, so it
+        /// reads as "now" rather than as praise or alarm.
+        /// </summary>
+        private AudioClip StartTone()
+        {
+            if (_runtimeStart == null)
+                _runtimeStart = BuildTone("PlaceholderStart", 0.18f, new[] { 587f }, new[] { 1f });
+            return _runtimeStart;
+        }
+
+        /// <summary>
+        /// Placeholder completion chime: a rising two-note interval, which is what makes a sound
+        /// read as "done" rather than "stopped". Replaced the moment a real clip is assigned.
+        /// </summary>
+        private AudioClip CompletionChime()
+        {
+            if (_runtimeComplete == null)
+                _runtimeComplete = BuildTone("PlaceholderChime", 0.55f,
+                                             new[] { 784f, 1175f }, new[] { 0.45f, 0.55f });
+            return _runtimeComplete;
+        }
+
+        /// <summary>
+        /// Builds a short clip from a sequence of notes, each with an exponential decay so it
+        /// sounds struck rather than switched on. Deliberately plain -- this is a stand-in that
+        /// keeps the flow testable, not a substitute for designed audio.
+        /// </summary>
+        private static AudioClip BuildTone(string name, float seconds, float[] frequencies,
+                                           float[] noteLengths)
+        {
+            const int sampleRate = 44100;
+            int total = Mathf.RoundToInt(seconds * sampleRate);
+            var data = new float[total];
+
+            int written = 0;
+            for (int n = 0; n < frequencies.Length && written < total; n++)
+            {
+                int noteSamples = Mathf.Min(Mathf.RoundToInt(noteLengths[n] * seconds * sampleRate),
+                                            total - written);
+                for (int i = 0; i < noteSamples; i++)
+                {
+                    float t = (float)i / sampleRate;
+                    float envelope = Mathf.Exp(-6f * i / noteSamples);
+                    data[written + i] = Mathf.Sin(2f * Mathf.PI * frequencies[n] * t) * envelope * 0.35f;
+                }
+                written += noteSamples;
+            }
+
+            var clip = AudioClip.Create(name, total, 1, sampleRate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
     }
 }
