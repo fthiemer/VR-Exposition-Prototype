@@ -35,6 +35,10 @@ namespace Exposure
         [SerializeField] private GameObject surfaceGlass;
         [SerializeField] private GameObject surfacePlank;
 
+        [Tooltip("Solid ground behind the plank -- somewhere to start from and step back to. " +
+                 "Shown only for the plank surface.")]
+        [SerializeField] private GameObject plankApron;
+
         [Header("Other Objects")]
         [SerializeField] private GameObject safetyNet;
         [SerializeField] private AudioSource windAudio;
@@ -52,6 +56,7 @@ namespace Exposure
             SetActive(surfaceGrating, state.surface == SurfaceType.Grating);
             SetActive(surfaceGlass, state.surface == SurfaceType.Glass);
             SetActive(surfacePlank, state.surface == SurfaceType.Plank);
+            SetActive(plankApron, state.surface == SurfaceType.Plank);
 
             SetActive(safetyNet, state.safetyNetVisible);
 

@@ -64,6 +64,42 @@ namespace Exposure.EditorTools
             {
                 tracker = Undo.AddComponent<HeightTaskTracker>(envRoot);
             }
+            // --- plank level geometry ---
+            // The plank used to replace the whole platform, so "crossing" it was not a
+            // traversal at all. Instead: the rear half of the play area stays solid ground and
+            // the front half becomes a narrow plank with a drop either side. That is roughly a
+            // metre of real walking, which is all a 2x2 m room-scale space allows, and the
+            // participant returns by stepping back rather than being teleported.
+            // Note: the surfaces live directly under AcrophobiaEnvironment, NOT under
+            // PlatformRig -- PlatformRig is the surrounding world, which is what moves during
+            // the elevator ride. Anything the participant stands on has to stay put.
+            {
+                var plank = envRoot.transform.Find("SurfacePlank");
+                if (plank != null)
+                {
+                    plank.localPosition = new Vector3(0f, -0.1f, 2f);
+                    plank.localScale = new Vector3(0.6f, 0.2f, 1f);
+                }
+
+                // Solid ground behind the plank, so there is somewhere to start from and
+                // step back to. Only shown for the plank level.
+                var apron = envRoot.transform.Find("PlankApron");
+                if (apron == null)
+                {
+                    var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    go.name = "PlankApron";
+                    Undo.RegisterCreatedObjectUndo(go, "Create PlankApron");
+                    go.transform.SetParent(envRoot.transform, false);
+                    apron = go.transform;
+                }
+                apron.localPosition = new Vector3(0f, -0.1f, 1f);
+                apron.localScale = new Vector3(2f, 0.2f, 1f);
+
+                var envSo = new SerializedObject(env);
+                envSo.FindProperty("plankApron").objectReferenceValue = apron.gameObject;
+                envSo.ApplyModifiedProperties();
+            }
+
             // --- task feedback: target marker, sound, particle burst ---
             var feedbackRoot = envRoot.transform.Find("TaskFeedback");
             if (feedbackRoot == null)
