@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Exposure
@@ -47,6 +48,13 @@ namespace Exposure
         [Tooltip("Minimum gap between two cues, in seconds.")]
         [SerializeField, Min(5f)] private float avoidanceCooldownSeconds = 20f;
 
+        [Header("Feedback")]
+        [Tooltip("Components implementing ITaskFeedback -- target marker, sound, particles. " +
+                 "Any combination; leave empty for none.")]
+        [SerializeField] private List<MonoBehaviour> feedbackBehaviours = new List<MonoBehaviour>();
+
+        private readonly List<ITaskFeedback> _feedback = new List<ITaskFeedback>();
+
         public float MinDistanceToEdge { get; private set; } = -1f;
         public float SecondsLookingDown { get; private set; }
 
@@ -69,6 +77,17 @@ namespace Exposure
         private bool _conditionWasMet;
         private float _lastCueTime = -999f;
 
+        private void Awake()
+        {
+            foreach (var behaviour in feedbackBehaviours)
+            {
+                if (behaviour == null) continue;
+                if (behaviour is ITaskFeedback f) _feedback.Add(f);
+                else Debug.LogError($"[Exposure] {behaviour.name} is assigned as task feedback " +
+                                    "but does not implement ITaskFeedback.", behaviour);
+            }
+        }
+
         private Transform Head
         {
             get
@@ -78,7 +97,7 @@ namespace Exposure
             }
         }
 
-public void BeginTask(TaskType task, Action onCompleted)
+        public void BeginTask(TaskType task, Action onCompleted)
         {
             _task = task;
             _onCompleted = onCompleted;
@@ -88,15 +107,24 @@ public void BeginTask(TaskType task, Action onCompleted)
             _conditionWasMet = false;
             SecondsLookingDown = 0f;
             MinDistanceToEdge = -1f;
+
+            for (int i = 0; i < _feedback.Count; i++) _feedback[i].TaskStarted(task);
         }
 
         public void CancelTask()
         {
+            // The session calls this unconditionally after the task loop, including right
+            // after a successful completion -- only report a cancellation if the task was
+            // actually still running.
+            bool wasRunning = _running;
             _running = false;
             _onCompleted = null;
+
+            if (wasRunning)
+                for (int i = 0; i < _feedback.Count; i++) _feedback[i].TaskCancelled();
         }
 
-private void Update()
+        private void Update()
         {
             if (!_running || Head == null) return;
 
@@ -122,11 +150,17 @@ private void Update()
 
             SecondsConditionHeld = conditionMet ? SecondsConditionHeld + Time.deltaTime : 0f;
 
+            for (int i = 0; i < _feedback.Count; i++)
+                _feedback[i].TaskProgress(HoldProgress01, conditionMet);
+
             if (conditionMet && SecondsConditionHeld >= holdSecondsRequired)
             {
                 _running = false;
                 var cb = _onCompleted;
                 _onCompleted = null;
+
+                for (int i = 0; i < _feedback.Count; i++) _feedback[i].TaskCompleted();
+
                 cb?.Invoke();
                 return;
             }
@@ -134,11 +168,7 @@ private void Update()
             CheckAvoidance(atEdge);
         }
 
-/// <summary>
-        /// The instantaneous geometric condition for the current task. Completion additionally
-        /// requires holding this for <c>holdSecondsRequired</c>, handled in Update().
-        /// </summary>
-/// <summary>
+        /// <summary>
         /// The instantaneous geometric condition for the current task. Completion additionally
         /// requires holding this for <c>holdSecondsRequired</c>, handled in Update().
         /// </summary>
