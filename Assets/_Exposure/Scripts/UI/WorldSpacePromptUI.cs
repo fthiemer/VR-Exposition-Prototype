@@ -31,8 +31,9 @@ namespace Exposure.UI
         [SerializeField] private float fallbackEyeHeight = 1.6f;
         [Tooltip("Head heights below this are treated as not-yet-tracked and get the fallback instead.")]
         [SerializeField] private float minPlausibleHeadHeight = 1.0f;
-        [Tooltip("While a panel is visible, its position is re-checked on this interval so it self-corrects once real tracking data arrives.")]
-        [SerializeField] private float revalidateIntervalSeconds = 2f;
+        [Tooltip("How long to keep watching for a first plausible head pose after a panel appears. " +
+                 "Once one arrives the panel is placed for good and stops following the head.")]
+        [SerializeField] private float settleTimeoutSeconds = 10f;
 
         [Header("Panel")]
         [SerializeField] private Vector2 panelSize = new Vector2(0.7f, 0.5f);
@@ -48,7 +49,8 @@ namespace Exposure.UI
         private RectTransform _buttonArea;
         private readonly List<GameObject> _buttons = new List<GameObject>();
 
-        private Coroutine _revalidateRoutine;
+        private Coroutine _settleRoutine;
+        private bool _placedFromValidPose;
 
         private Transform Head
         {
@@ -248,10 +250,18 @@ private void ShowYesNo(string question, Action<bool> onAnswered)
 
 private void Show()
         {
+            // Each new panel is placed once, in front of wherever the participant is looking.
+            _placedFromValidPose = false;
             PlaceInFrontOfHead();
             _canvas.gameObject.SetActive(true);
-            if (_revalidateRoutine == null)
-                _revalidateRoutine = StartCoroutine(RevalidatePlacementPeriodically());
+
+            // A panel shown immediately after session start (or right after the headset is put
+            // on) can land using a not-yet-valid head pose. Watch only until the first plausible
+            // pose arrives, then stop -- a panel that keeps re-centring while being read is
+            // worse than one placed slightly off.
+            if (_settleRoutine != null) StopCoroutine(_settleRoutine);
+            if (!_placedFromValidPose)
+                _settleRoutine = StartCoroutine(PlaceOnceHeadPoseBecomesValid());
         }
 
 
@@ -261,10 +271,10 @@ private void Hide()
         {
             ClearButtons();
             if (_canvas != null) _canvas.gameObject.SetActive(false);
-            if (_revalidateRoutine != null)
+            if (_settleRoutine != null)
             {
-                StopCoroutine(_revalidateRoutine);
-                _revalidateRoutine = null;
+                StopCoroutine(_settleRoutine);
+                _settleRoutine = null;
             }
         }
 
@@ -276,26 +286,40 @@ private void PlaceInFrontOfHead()
             if (forward.sqrMagnitude < 0.001f) forward = Vector3.forward;
             forward.Normalize();
 
-            // The tracked head height can be implausible right after session start (pose not
-            // settled yet) -- fall back to a plausible eye height instead of sinking the panel
-            // into the floor. RevalidatePlacementPeriodically() re-runs this on a timer, so the
-            // panel self-corrects to the real head height once tracking catches up.
-            float headY = Head.position.y >= minPlausibleHeadHeight ? Head.position.y : fallbackEyeHeight;
+            // Until the tracked pose is valid, use a plausible eye height rather than sinking
+            // the panel into the floor.
+            bool valid = HasPlausibleHeadPose();
+            float headY = valid ? Head.position.y : fallbackEyeHeight;
+            _placedFromValidPose = valid;
+
             Vector3 headPos = new Vector3(Head.position.x, headY, Head.position.z);
 
             _canvas.transform.position = headPos + forward * distanceFromHead + Vector3.up * verticalOffset;
             _canvas.transform.rotation = Quaternion.LookRotation(forward, Vector3.up);
         }
 
-private IEnumerator RevalidatePlacementPeriodically()
+private IEnumerator PlaceOnceHeadPoseBecomesValid()
         {
-            var wait = new WaitForSeconds(revalidateIntervalSeconds);
-            while (true)
+            float waited = 0f;
+            while (waited < settleTimeoutSeconds)
             {
-                yield return wait;
-                PlaceInFrontOfHead();
+                if (HasPlausibleHeadPose())
+                {
+                    PlaceInFrontOfHead();
+                    break;
+                }
+                waited += Time.deltaTime;
+                yield return null;
             }
+            _settleRoutine = null;
         }
+
+        /// <summary>
+        /// A head height near the floor means the tracked pose has not initialised yet -- the
+        /// participant is not actually lying on the ground.
+        /// </summary>
+        private bool HasPlausibleHeadPose()
+            => Head != null && Head.position.y >= minPlausibleHeadHeight;
 
 
         private static string TextForOutcome(FearedOutcomeCatalog catalog, string id)
