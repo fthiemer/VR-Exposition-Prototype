@@ -33,7 +33,20 @@ namespace Exposure.UI
         [SerializeField] private float minPlausibleHeadHeight = 1.0f;
         [Tooltip("How long to keep watching for a first plausible head pose after a panel appears. " +
                  "Once one arrives the panel is placed for good and stops following the head.")]
-        [SerializeField] private float settleTimeoutSeconds = 10f;
+        [Tooltip("How far the panel may drift from its ideal spot before it follows. Below this " +
+                 "it stays put, so small head movement does not make it swim.")]
+        [SerializeField, Min(0f)] private float followDeadZoneMeters = 0.22f;
+
+        [Tooltip("Same idea for looking away: the panel only re-centres past this angle.")]
+        [SerializeField, Min(0f)] private float followDeadZoneDegrees = 22f;
+
+        [Tooltip("Higher glides back faster. Deliberately smooth -- a panel that snaps is worse " +
+                 "to read than one slightly off.")]
+        [SerializeField, Min(0.1f)] private float followSmoothing = 3.5f;
+
+        [Tooltip("Buttons ignore presses for this long after a panel appears, so a poke meant " +
+                 "for the previous panel cannot carry over into the next one.")]
+        [SerializeField, Min(0f)] private float inputCooldownSeconds = 0.45f;
 
         [Header("Panel")]
         [SerializeField] private Vector2 panelSize = new Vector2(0.7f, 0.5f);
@@ -53,6 +66,9 @@ namespace Exposure.UI
 
         private Coroutine _settleRoutine;
         private bool _placedFromValidPose;
+        private bool _visible;
+        private bool _following;
+        private float _inputBlockedUntil;
 
         private Transform Head
         {
@@ -242,7 +258,12 @@ private void ShowYesNo(string question, Action<bool> onAnswered)
             text.text = label;
             Stretch(textGo.GetComponent<RectTransform>());
 
-            go.GetComponent<Button>().onClick.AddListener(() => onClick?.Invoke());
+            go.GetComponent<Button>().onClick.AddListener(() =>
+            {
+                // Swallow presses that arrive during the cooldown after a panel change.
+                if (Time.time < _inputBlockedUntil) return;
+                onClick?.Invoke();
+            });
             _buttons.Add(go);
         }
 
@@ -364,15 +385,17 @@ private void ShowYesNo(string question, Action<bool> onAnswered)
 
 private void Show()
         {
-            // Each new panel is placed once, in front of wherever the participant is looking.
             _placedFromValidPose = false;
+            _following = false;
             PlaceInFrontOfHead();
             _canvas.gameObject.SetActive(true);
+            _visible = true;
 
-            // A panel shown immediately after session start (or right after the headset is put
-            // on) can land using a not-yet-valid head pose. Watch only until the first plausible
-            // pose arrives, then stop -- a panel that keeps re-centring while being read is
-            // worse than one placed slightly off.
+            // Every new panel starts unresponsive for a moment. Without this, a poke aimed at
+            // the previous panel lands on whichever button now occupies that spot -- which is
+            // how someone answers a question they never saw.
+            _inputBlockedUntil = Time.time + inputCooldownSeconds;
+
             if (_settleRoutine != null) StopCoroutine(_settleRoutine);
             if (!_placedFromValidPose)
                 _settleRoutine = StartCoroutine(PlaceOnceHeadPoseBecomesValid());
@@ -384,6 +407,8 @@ private void Show()
 private void Hide()
         {
             ClearButtons();
+            _visible = false;
+            _following = false;
             if (_canvas != null) _canvas.gameObject.SetActive(false);
             if (_settleRoutine != null)
             {
@@ -392,24 +417,62 @@ private void Hide()
             }
         }
 
-private void PlaceInFrontOfHead()
+/// <summary>
+        /// Keeps the panel at a constant distance without making it swim.
+        ///
+        /// Placing it once and leaving it there meant that walking towards the edge -- which is
+        /// the whole task -- left the panel behind, so it drifted out of comfortable reading and
+        /// poking range. Following the head every frame fixes that but makes the panel feel like
+        /// it is attached to your face. The dead zone is the compromise: it holds still while you
+        /// are roughly where you were, and glides back once you have actually moved away.
+        /// </summary>
+        private void Update()
         {
-            if (Head == null) return;
+            if (!_visible || _canvas == null || Head == null) return;
+
+            ComputeTargetPose(out var targetPos, out var targetRot);
+
+            float posError = Vector3.Distance(_canvas.transform.position, targetPos);
+            float angError = Quaternion.Angle(_canvas.transform.rotation, targetRot);
+
+            if (!_following && (posError > followDeadZoneMeters || angError > followDeadZoneDegrees))
+                _following = true;
+
+            if (!_following) return;
+
+            float k = 1f - Mathf.Exp(-followSmoothing * Time.deltaTime);
+            _canvas.transform.position = Vector3.Lerp(_canvas.transform.position, targetPos, k);
+            _canvas.transform.rotation = Quaternion.Slerp(_canvas.transform.rotation, targetRot, k);
+
+            // Settle again once it has caught up, so it stops chasing sub-centimetre wobble.
+            if (posError < 0.02f && angError < 1.5f) _following = false;
+        }
+
+        /// <summary>Where the panel would ideally sit for the current head pose.</summary>
+        private void ComputeTargetPose(out Vector3 position, out Quaternion rotation)
+        {
             Vector3 forward = Head.forward;
             forward.y = 0f;
             if (forward.sqrMagnitude < 0.001f) forward = Vector3.forward;
             forward.Normalize();
 
-            // Until the tracked pose is valid, use a plausible eye height rather than sinking
-            // the panel into the floor.
-            bool valid = HasPlausibleHeadPose();
-            float headY = valid ? Head.position.y : fallbackEyeHeight;
-            _placedFromValidPose = valid;
+            float headY = HasPlausibleHeadPose() ? Head.position.y : fallbackEyeHeight;
+            var headPos = new Vector3(Head.position.x, headY, Head.position.z);
 
-            Vector3 headPos = new Vector3(Head.position.x, headY, Head.position.z);
+            position = headPos + forward * distanceFromHead + Vector3.up * verticalOffset;
+            rotation = Quaternion.LookRotation(forward, Vector3.up);
+        }
 
-            _canvas.transform.position = headPos + forward * distanceFromHead + Vector3.up * verticalOffset;
-            _canvas.transform.rotation = Quaternion.LookRotation(forward, Vector3.up);
+
+private void PlaceInFrontOfHead()
+        {
+            if (Head == null) return;
+
+            _placedFromValidPose = HasPlausibleHeadPose();
+            ComputeTargetPose(out var position, out var rotation);
+
+            _canvas.transform.position = position;
+            _canvas.transform.rotation = rotation;
         }
 
 private IEnumerator PlaceOnceHeadPoseBecomesValid()
