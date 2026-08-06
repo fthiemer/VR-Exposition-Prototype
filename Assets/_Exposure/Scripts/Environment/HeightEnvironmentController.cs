@@ -48,6 +48,19 @@ namespace Exposure
         [SerializeField] private AudioSource windAudio;
         [SerializeField, Range(0f, 1f)] private float maxWindVolume = 0.5f;
 
+        [Header("Audio")]
+        [Tooltip("Plays for the duration of the ride between floors, so the transition is heard " +
+                 "as well as seen.")]
+        [SerializeField] private AudioSource elevatorAudio;
+
+        [Tooltip("City ambience from the ground far below. Gets quieter with height, which is " +
+                 "itself a height cue.")]
+        [SerializeField] private AudioSource cityAmbienceAudio;
+        [SerializeField, Range(0f, 1f)] private float maxCityVolume = 0.35f;
+
+        [Tooltip("Floor index at which city ambience has faded to its quietest.")]
+        [SerializeField, Min(1)] private int cityFadeOutFloor = 10;
+
         private Coroutine _moveRoutine;
 
         public void Apply(HeightState state, bool instant)
@@ -72,6 +85,12 @@ namespace Exposure
             if (windAudio != null)
                 windAudio.volume = state.windIntensity * maxWindVolume;
 
+            if (cityAmbienceAudio != null)
+            {
+                float height01 = Mathf.Clamp01((float)state.floorIndex / cityFadeOutFloor);
+                cityAmbienceAudio.volume = Mathf.Lerp(maxCityVolume, maxCityVolume * 0.15f, height01);
+            }
+
             // --- vertical ride: soft blend ---
             float targetY = -state.floorIndex * floorHeightMeters;
 
@@ -86,6 +105,9 @@ namespace Exposure
 
         private IEnumerator MoveTo(float targetY)
         {
+            if (elevatorAudio != null && !Mathf.Approximately(platformRig.localPosition.y, targetY))
+                elevatorAudio.Play();
+
             float t = 0f;
             float startY = platformRig.localPosition.y;
             while (t < transitionSeconds)
@@ -96,7 +118,28 @@ namespace Exposure
                 yield return null;
             }
             SetY(targetY);
+
+            // Fade rather than cut: the clip is longer than the ride, and a hard stop on
+            // arrival reads as a glitch rather than as the lift settling.
+            if (elevatorAudio != null && elevatorAudio.isPlaying)
+                yield return FadeOutElevator();
+
             _moveRoutine = null;
+        }
+
+        private IEnumerator FadeOutElevator()
+        {
+            float startVolume = elevatorAudio.volume;
+            float t = 0f;
+            const float fadeSeconds = 0.6f;
+            while (t < fadeSeconds)
+            {
+                t += Time.deltaTime;
+                elevatorAudio.volume = Mathf.Lerp(startVolume, 0f, t / fadeSeconds);
+                yield return null;
+            }
+            elevatorAudio.Stop();
+            elevatorAudio.volume = startVolume;
         }
 
         private void SetY(float y)

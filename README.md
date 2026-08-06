@@ -59,25 +59,52 @@ Pro Schritt nur **eine** Stellschraube verändern. Nicht stur höher: auf gleich
 variieren, Bewältigtes neu kombinieren (Glasboden *und* keine Brüstung). Die Therapeut:in
 muss jederzeit eingreifen und die Stufe anpassen können.
 
-### Ablauf einer Übung
+### Ablauf einer Sitzung
 
-1. Stufe auswählen — durch die Therapeut:in oder gemeinsam.
-2. **Vorher:** Befürchtung auswählen, dazu Überzeugungsgrad. Liste aus einem validierten
-   Instrument (ACQ-Gedankenskala oder Heights Interpretation Questionnaire), kein Freitext.
-3. Aufgabe ausführen. Keine Unterbrechung — außer kurzem Hinweis bei erkennbarer Vermeidung.
-4. **Nachher:** Ausmaß des tatsächlichen Eintritts, Angstrating, erneuter Überzeugungsgrad —
-   die Differenz ist das eigentliche Ergebnis.
-5. Weiter erst nach Bestätigung durch die Patient:in.
-6. Am Sitzungsende: Übersicht der getesteten Befürchtungen als Gesprächsgrundlage.
+Gemessen wird **einmal pro Sitzung, am Boden** — nicht pro Aufgabe und nie in der Höhe.
+
+| Phase | Ort | Was passiert |
+|---|---|---|
+| 1. Einführung | Boden | Prinzip erklären, Befürchtung wählen, **E₁** erheben |
+| 2. Etagenauswahl | Boden | Patient:in wählt aus den freigeschalteten Etagen |
+| 3. Aufgabe | Höhe | Ausführen, keine Abfrage. Danach Coach-Rückfrage: *„Fühlst du dich sicherer als vorhin?"* |
+| 4. Entscheidung | Höhe | Wiederholen · andere Aufgabe · eine Etage höher · Sitzung beenden — wiederholt sich bis zum Ende |
+| 5. Abschluss | zurück am Boden | **O** und **E₂** erheben, Fortschritt zeigen |
+
+**Die drei Messwerte** (0–10, nach
+[Freeman et al. 2018](https://doi.org/10.1016/S2215-0366(18)30226-8)):
+**E₁** erwartete Wahrscheinlichkeit vorher · **O** wie stark es tatsächlich eintrat ·
+**E₂** erwartete Wahrscheinlichkeit fürs nächste Mal.
+
+Daraus **Erwartungsänderung** = E₁ − E₂ und **Lernrate** = (E₁ − E₂) / (E₁ − O).
+
+**Warum nicht die Erwartungsverletzung als Fortschrittskriterium?**
+[Pittig et al. 2023](https://doi.org/10.1177/21677026221101379) fanden im Volltext:
+*„Not expectancy violation itself, but higher learning rate and expectancy change predicted
+better treatment outcome."* Die Überraschung allein sagt den Erfolg also **nicht** vorher —
+entscheidend ist, ob sich die Erwartung für die Zukunft bewegt. Deshalb schaltet der Prototyp
+nicht mehr auf die Verletzung frei.
+
+### Progression
+
+Zwei getrennte Achsen: **Etagen** werden dauerhaft freigeschaltet (jeweils genau eine über der
+erreichten, sobald dort eine Aufgabe erfüllt wurde) und nie wieder entzogen. **Aufgaben** liegen
+als Pool je Etage vor, leichteste zuerst — „auf der Etage bleiben" heißt eine *andere* Aufgabe,
+nicht dieselbe nochmal.
+
+Es gibt **keine Sperre und keine datenbasierte Empfehlung** nach einer Aufgabe: nur die
+qualitative Coach-Frage, dann freie Wahl. Das entspricht Freemans Vorgehen; E₁/O/E₂ und Lernrate
+sind Sitzungskennzahlen für die Therapeut:in, entkoppelt von der Aufgabe-zu-Aufgabe-Entscheidung.
 
 ### Rahmenbedingungen
 
 - Abbruch jederzeit ohne Begründung; harte Grenze bei Herzfrequenz 200.
-- Start ebenerdig, kein automatischer Stufenwechsel.
-- Höchstens zwei Unterbrechungen pro Übung — Dauerabfragen zerstören das Erleben.
+- Start ebenerdig, kein automatischer Stufenwechsel; die Aufzugfahrt wird immer real durchlebt.
+- **Null Datenabfragen in der Höhe** — Dauerabfragen zerstören das Erleben.
 - Bedienung per Handtracking, ohne Controller.
-- Dokumentiert werden Befürchtung, Überzeugungsgrad vorher/nachher, Ausgang, Angstverlauf
-  und Abstand zur Kante — sitzungsübergreifend.
+- Dokumentiert werden Befürchtung, E₁/O/E₂, Erwartungsänderung, Lernrate und Abstand zur Kante.
+- Sicherheitsverhalten wird in der Einführung *erklärt*, nicht algorithmisch bewertet — so
+  handhabt es auch Freeman.
 - Vor und nach der Behandlung:
   [Acrophobia Questionnaire](https://doi.org/10.1016/S0005-7894(77)80116-0), STAI-State.
 
@@ -134,5 +161,6 @@ Kopieren und Exportieren.
 ## Assets
 
 Das Repository enthält keine kommerziellen Assets und ist nach dem Klonen als Blockout
-lauffähig. Pakete, Lizenzen und die Erzeugung der polierten Fassung: siehe
+lauffähig. Die verwendeten Sounds stammen von freesound.org (CC0 / CC BY) und liegen mit
+Namensnennung bei. Pakete, Lizenzen und die Erzeugung der polierten Fassung: siehe
 [ASSETS.md](ASSETS.md).

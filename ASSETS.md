@@ -3,6 +3,18 @@
 Das Repository enthält **keine kommerziellen Assets**. Die Szene läuft als Blockout aus
 Unity-Primitiven und ist nach dem Klonen vollständig lauffähig.
 
+## Sounds (im Repository, frei lizenziert)
+
+Unter `Assets/_Exposure/Audio/`, gekürzt und für Standalone-VR nach Ogg Vorbis konvertiert.
+
+| Datei | Quelle | Lizenz |
+|---|---|---|
+| `ElevatorRide.ogg` | *Elevator Ride Interior* von Filmscore — [freesound.org/s/825478](https://freesound.org/s/825478/) | CC0 |
+| `CityAmbience.ogg` | *CityPark AtmosSpring NL Havensingel* von klankbeeld — [freesound.org/s/231839](https://freesound.org/s/231839/) | CC BY 4.0 |
+| `CarIdle.ogg` | *Car Engine, VW Golf GLE 1.8, idle, interior* von JoniHeinonen — [freesound.org/s/236903](https://freesound.org/s/236903/) | CC BY 3.0 |
+
+Die beiden CC-BY-Titel erfordern Namensnennung; die Tabelle oben erfüllt das.
+
 ## Verwendete 3rd-Party-Pakete (nicht im Repository)
 
 | Paket | Verwendung | Quelle / Lizenz |

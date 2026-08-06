@@ -24,6 +24,9 @@ namespace Exposure.EditorTools
         private const string XriClickClip = XriAudioFolder + "/ButtonClick.wav";
         private const string ConfettiPath = "Assets/Samples/XR Interaction Toolkit/3.4.1/Starter Assets/" +
                                             "DemoAssets/Prefabs/Interactables/Confetti.prefab";
+        private const string ExposureAudioFolder = "Assets/_Exposure/Audio";
+        private const string ElevatorClip = ExposureAudioFolder + "/ElevatorRide.ogg";
+        private const string CityAmbienceClip = ExposureAudioFolder + "/CityAmbience.ogg";
 
         [MenuItem("Exposure/Setup Acrophobia Scene")]
         public static void Setup()
@@ -108,6 +111,7 @@ namespace Exposure.EditorTools
 
             BuildPlatformBoundary(envRoot.transform, env);
             ApplyGlassMaterials(envRoot.transform);
+            BuildEnvironmentAudio(envRoot.transform, env);
 
             // A longer ride. Three seconds barely registered as travel; the transition is what
             // sells having gone somewhere, and it is also the moment the participant has to
@@ -432,6 +436,60 @@ namespace Exposure.EditorTools
             so.ApplyModifiedProperties();
         }
 
+
+        /// <summary>
+        /// Creates the two ambient audio sources and hands them to the environment controller.
+        ///
+        /// Both are 2D (spatialBlend 0): they are meant to surround the participant rather than
+        /// come from a point, and a positional source would swing around the head on every turn.
+        /// The city loop is what actually sells the height -- traffic heard faintly from far
+        /// below places the drop in a way a silent void never does.
+        /// </summary>
+        private static void BuildEnvironmentAudio(Transform envRoot, HeightEnvironmentController env)
+        {
+            var elevator = EnsureLoopingSource(envRoot, "ElevatorAudio", ElevatorClip,
+                                               playOnAwake: false, volume: 0.7f, loop: false);
+            var city = EnsureLoopingSource(envRoot, "CityAmbienceAudio", CityAmbienceClip,
+                                           playOnAwake: true, volume: 0.35f, loop: true);
+
+            var so = new SerializedObject(env);
+            if (elevator != null) so.FindProperty("elevatorAudio").objectReferenceValue = elevator;
+            if (city != null) so.FindProperty("cityAmbienceAudio").objectReferenceValue = city;
+            so.ApplyModifiedProperties();
+        }
+
+        private static AudioSource EnsureLoopingSource(Transform parent, string name, string clipPath,
+                                                       bool playOnAwake, float volume, bool loop)
+        {
+            var t = parent.Find(name);
+            if (t == null)
+            {
+                var go = new GameObject(name);
+                Undo.RegisterCreatedObjectUndo(go, "Create " + name);
+                go.transform.SetParent(parent, false);
+                t = go.transform;
+            }
+
+            // Re-query rather than using what AddComponent returns: on a GameObject created in
+            // the same run, that reference does not resolve to the live component yet and every
+            // property assignment throws MissingComponentException.
+            if (t.GetComponent<AudioSource>() == null) Undo.AddComponent<AudioSource>(t.gameObject);
+            var source = t.GetComponent<AudioSource>();
+
+            var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(clipPath);
+            if (clip == null)
+            {
+                Debug.LogWarning($"[Exposure] Audio clip not found at {clipPath} -- {name} stays silent.");
+                return source;
+            }
+
+            source.clip = clip;
+            source.loop = loop;
+            source.playOnAwake = playOnAwake;
+            source.volume = volume;
+            source.spatialBlend = 0f;
+            return source;
+        }
 
         private static Material TransparentLit(string name, Color color, float smoothness)
         {
