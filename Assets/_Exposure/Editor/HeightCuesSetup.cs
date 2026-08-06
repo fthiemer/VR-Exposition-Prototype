@@ -72,10 +72,15 @@ namespace Exposure.EditorTools
         }
 
         /// <summary>
-        /// The wall directly below the edge, banded once per storey. This is the single most
-        /// useful cue: it sits exactly where someone looks when told to look down, and the
-        /// repeating bands act as a ruler that keeps counting to the street. Without it the
-        /// drop has no continuous scale and reads as a flat backdrop.
+        /// The wall of the building the platform is attached to, banded once per storey.
+        ///
+        /// Sits at the platform's *rear* edge, not its centre. Getting this wrong put the wall
+        /// through the middle of the standing area, so the participant was inside it. The wall
+        /// keeps its collider for the same reason: walking into the building has to be blocked,
+        /// unlike the purely decorative scenery further out.
+        ///
+        /// The bands are the useful part -- they keep counting storeys all the way down to the
+        /// street, which is what gives the drop a continuous scale instead of a flat backdrop.
         /// </summary>
         private static void BuildOwnFacade(Transform parent)
         {
@@ -83,17 +88,24 @@ namespace Exposure.EditorTools
             facade.transform.SetParent(parent, false);
 
             float height = Storeys * FloorHeight;
+            const float thickness = 0.4f;
 
-            MakeBox("Wall", facade.transform,
-                new Vector3(0f, height * 0.5f, 1.35f),
-                new Vector3(9f, height, 0.4f),
+            // HeightCues sits at world z = -1.5, the platform spans world z -1..1, so its rear
+            // edge is world z = -1 -> local z = 0.5. Offset by half the thickness so the wall's
+            // face lands on the edge rather than straddling it.
+            float wallZ = 0.5f - thickness * 0.5f;
+
+            var wall = MakeBox("Wall", facade.transform,
+                new Vector3(0f, height * 0.5f, wallZ),
+                new Vector3(9f, height, thickness),
                 Mat("Cue_Facade", new Color(0.55f, 0.56f, 0.58f)));
+            wall.AddComponent<BoxCollider>(); // solid: you cannot walk into the building
 
             var windowMat = Mat("Cue_Window", new Color(0.16f, 0.20f, 0.26f));
             for (int i = 0; i < Storeys; i++)
             {
                 MakeBox($"WindowBand_{i}", facade.transform,
-                    new Vector3(0f, i * FloorHeight + FloorHeight * 0.62f, 1.12f),
+                    new Vector3(0f, i * FloorHeight + FloorHeight * 0.62f, wallZ + thickness * 0.55f),
                     new Vector3(8.4f, 0.55f, 0.12f),
                     windowMat);
             }
