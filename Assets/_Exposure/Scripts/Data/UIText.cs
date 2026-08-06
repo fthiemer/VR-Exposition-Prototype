@@ -23,6 +23,16 @@ namespace Exposure
             ["outcome_no"] = "Nein, ist nicht passiert",
             ["conviction_after_question"] = "Wie überzeugt bist du jetzt, dass es passieren würde?",
             ["anxiety_question"] = "Wie ängstlich hast du dich dabei gefühlt?",
+
+            // Scale anchors. Naming both ends and the middle is what makes a rating
+            // interpretable -- a bare percentage leaves people inventing their own scale.
+            ["scale_conviction_low"] = "gar nicht",
+            ["scale_conviction_mid"] = "könnte sein",
+            ["scale_conviction_high"] = "ganz sicher",
+            ["scale_anxiety_low"] = "ruhig",
+            ["scale_anxiety_mid"] = "spürbar",
+            ["scale_anxiety_high"] = "maximale Angst",
+            ["rating_confirm"] = "Weiter",
             ["summary_title"] = "Was du heute getestet hast",
             ["summary_levels"] = "Bearbeitete Stufen: {0}",
             ["summary_disconfirmed"] = "Befürchtungen, die nicht eingetreten sind: {0} von {1}",

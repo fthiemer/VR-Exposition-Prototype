@@ -40,8 +40,10 @@ namespace Exposure.UI
         [SerializeField] private Color panelColor = new Color(0.06f, 0.09f, 0.11f, 0.94f);
         [SerializeField] private Color buttonColor = new Color(0.16f, 0.36f, 0.44f, 1f);
         [SerializeField] private Color textColor = Color.white;
+        [SerializeField] private Color mutedTextColor = new Color(0.72f, 0.78f, 0.82f, 1f);
+        [SerializeField] private Color trackColor = new Color(0.10f, 0.15f, 0.18f, 1f);
+        [SerializeField] private Color handleColor = new Color(0.85f, 0.93f, 0.97f, 1f);
 
-        private static readonly int[] RatingSteps = { 0, 25, 50, 75, 100 };
 
         private Canvas _canvas;
         private RectTransform _root;
@@ -78,7 +80,11 @@ public void AskPrediction(FearedOutcomeCatalog catalog, Action<Prediction> onAns
             }
 
             ShowOutcomeChoice(catalog, chosenId =>
-                ShowRating(UIText.Get("conviction_before_question"), percent =>
+                ShowRating(UIText.Get("conviction_before_question"),
+                           UIText.Get("scale_conviction_low"),
+                           UIText.Get("scale_conviction_mid"),
+                           UIText.Get("scale_conviction_high"),
+                           percent =>
                 {
                     Hide();
                     onAnswered?.Invoke(new Prediction { outcomeId = chosenId, convictionPercent = percent });
@@ -90,8 +96,16 @@ public void AskOutcome(FearedOutcomeCatalog catalog, Prediction prediction, Acti
             string predictedText = TextForOutcome(catalog, prediction.outcomeId);
 
             ShowYesNo(UIText.Get("outcome_question", predictedText), occurred =>
-                ShowRating(UIText.Get("conviction_after_question"), convictionAfter =>
-                    ShowRating(UIText.Get("anxiety_question"), anxiety =>
+                ShowRating(UIText.Get("conviction_after_question"),
+                           UIText.Get("scale_conviction_low"),
+                           UIText.Get("scale_conviction_mid"),
+                           UIText.Get("scale_conviction_high"),
+                           convictionAfter =>
+                    ShowRating(UIText.Get("anxiety_question"),
+                               UIText.Get("scale_anxiety_low"),
+                               UIText.Get("scale_anxiety_mid"),
+                               UIText.Get("scale_anxiety_high"),
+                               anxiety =>
                     {
                         Hide();
                         onAnswered?.Invoke(new OutcomeReport
@@ -141,16 +155,25 @@ private void ShowYesNo(string question, Action<bool> onAnswered)
             AddButton(UIText.Get("outcome_no"), () => onAnswered?.Invoke(false));
         }
 
-        private void ShowRating(string question, Action<int> onAnswered)
+/// <summary>
+        /// Rating on a labelled 0-100 scale. A slider rather than discrete percentage buttons,
+        /// because naming both ends and the middle is what tells the participant what the
+        /// number means -- "75 %" on its own asks them to invent a scale. The percentage is
+        /// still what gets recorded, it is just read off the slider instead of picked.
+        ///
+        /// Poke-driven rather than grab-and-drag, which is the interaction that is actually
+        /// unreliable with tracked hands.
+        /// </summary>
+        private void ShowRating(string question, string lowLabel, string midLabel, string highLabel,
+                                Action<int> onAnswered)
         {
             Show();
             _title.text = question;
             ClearButtons();
-            foreach (int step in RatingSteps)
-            {
-                int captured = step;
-                AddButton($"{step} %", () => onAnswered?.Invoke(captured));
-            }
+
+            var slider = AddSlider(lowLabel, midLabel, highLabel);
+            AddButton(UIText.Get("rating_confirm"),
+                      () => onAnswered?.Invoke(Mathf.RoundToInt(slider.value)));
         }
 
         // ---------------------------------------------------------------- construction
@@ -222,6 +245,97 @@ private void ShowYesNo(string question, Action<bool> onAnswered)
             go.GetComponent<Button>().onClick.AddListener(() => onClick?.Invoke());
             _buttons.Add(go);
         }
+
+/// <summary>
+        /// Builds a 0-100 slider plus the three scale anchors underneath it. The handle is
+        /// deliberately wide: it is poked, not pinched, so it needs to be an easy target.
+        /// </summary>
+        private Slider AddSlider(string lowLabel, string midLabel, string highLabel)
+        {
+            var sliderGo = new GameObject("Rating", typeof(Image), typeof(Slider), typeof(LayoutElement));
+            sliderGo.transform.SetParent(_buttonArea, false);
+            _buttons.Add(sliderGo);
+            sliderGo.GetComponent<LayoutElement>().preferredHeight = 70f;
+            sliderGo.GetComponent<Image>().color = trackColor;
+
+            var fillArea = NewRect("Fill Area", sliderGo.transform);
+            fillArea.anchorMin = new Vector2(0f, 0.25f);
+            fillArea.anchorMax = new Vector2(1f, 0.75f);
+            fillArea.offsetMin = new Vector2(24f, 0f);
+            fillArea.offsetMax = new Vector2(-24f, 0f);
+
+            var fill = NewImage("Fill", fillArea, buttonColor);
+            var fillRect = fill.rectTransform;
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = new Vector2(0f, 1f);
+            fillRect.offsetMin = Vector2.zero;
+            fillRect.offsetMax = Vector2.zero;
+            fillRect.sizeDelta = new Vector2(24f, 0f);
+
+            var handleArea = NewRect("Handle Slide Area", sliderGo.transform);
+            handleArea.anchorMin = Vector2.zero;
+            handleArea.anchorMax = Vector2.one;
+            handleArea.offsetMin = new Vector2(24f, 0f);
+            handleArea.offsetMax = new Vector2(-24f, 0f);
+
+            var handle = NewImage("Handle", handleArea, handleColor);
+            var handleRect = handle.rectTransform;
+            handleRect.anchorMin = new Vector2(0f, 0f);
+            handleRect.anchorMax = new Vector2(0f, 1f);
+            handleRect.sizeDelta = new Vector2(48f, 0f);
+
+            var slider = sliderGo.GetComponent<Slider>();
+            slider.fillRect = fillRect;
+            slider.handleRect = handleRect;
+            slider.targetGraphic = handle;
+            slider.direction = Slider.Direction.LeftToRight;
+            slider.minValue = 0f;
+            slider.maxValue = 100f;
+            slider.wholeNumbers = true;
+            // Starts in the middle so neither end is suggested as the expected answer.
+            slider.value = 50f;
+
+            var labels = new GameObject("ScaleLabels", typeof(RectTransform), typeof(LayoutElement));
+            labels.transform.SetParent(_buttonArea, false);
+            _buttons.Add(labels);
+            labels.GetComponent<LayoutElement>().preferredHeight = 40f;
+            var labelsRect = labels.GetComponent<RectTransform>();
+
+            AddScaleLabel(labelsRect, lowLabel, TextAnchor.MiddleLeft, 0f, 0.34f);
+            AddScaleLabel(labelsRect, midLabel, TextAnchor.MiddleCenter, 0.33f, 0.67f);
+            AddScaleLabel(labelsRect, highLabel, TextAnchor.MiddleRight, 0.66f, 1f);
+
+            return slider;
+        }
+
+        private void AddScaleLabel(RectTransform parent, string text, TextAnchor alignment,
+                                   float anchorMinX, float anchorMaxX)
+        {
+            var go = new GameObject("Label", typeof(Text));
+            go.transform.SetParent(parent, false);
+
+            var label = go.GetComponent<Text>();
+            label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            label.fontSize = 20;
+            label.color = mutedTextColor;
+            label.alignment = alignment;
+            label.horizontalOverflow = HorizontalWrapMode.Overflow;
+            label.text = text;
+
+            var rect = go.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(anchorMinX, 0f);
+            rect.anchorMax = new Vector2(anchorMaxX, 1f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+        }
+
+        private static RectTransform NewRect(string name, Transform parent)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            return go.GetComponent<RectTransform>();
+        }
+
 
         private void ClearButtons()
         {
