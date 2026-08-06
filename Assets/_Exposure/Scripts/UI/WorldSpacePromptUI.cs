@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -40,6 +41,9 @@ namespace Exposure.UI
         private Text _title;
         private RectTransform _buttonArea;
         private readonly List<GameObject> _buttons = new List<GameObject>();
+
+        private const int FramesToWaitForFirstValidPose = 5;
+        private bool _firstPlacementDone;
 
         private Transform Head
         {
@@ -237,11 +241,31 @@ namespace Exposure.UI
 
         // ---------------------------------------------------------------- visibility
 
-        private void Show()
+private void Show()
         {
+            if (_firstPlacementDone)
+            {
+                PlaceInFrontOfHead();
+                _canvas.gameObject.SetActive(true);
+                return;
+            }
+
+            StartCoroutine(ShowAfterInitialPoseSettles());
+        }
+
+private IEnumerator ShowAfterInitialPoseSettles()
+        {
+            // The XR camera's tracked pose is not valid yet on the very first frames after the
+            // session starts, so placing the panel immediately anchors it near the floor. Waiting
+            // a few frames lets the OpenXR tracked pose driver update the head transform first.
+            for (int i = 0; i < FramesToWaitForFirstValidPose; i++)
+                yield return null;
+
+            _firstPlacementDone = true;
             PlaceInFrontOfHead();
             _canvas.gameObject.SetActive(true);
         }
+
 
         private void Hide()
         {
