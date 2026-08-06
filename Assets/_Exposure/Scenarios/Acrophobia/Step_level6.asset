@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightStepDefinition
   stepId: level6
   title: "Stufe 6 - Dachterrasse, offene Kante, \xFCber den Steg gehen"
-  instruction: "Geh in deinem eigenen Tempo \xFCber den Steg."
+  instruction: "Geh in deinem eigenen Tempo \xFCber den Steg bis ans Ende."
   state:
     floorIndex: 10
     railing: 2

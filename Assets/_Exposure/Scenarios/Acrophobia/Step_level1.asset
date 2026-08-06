@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightStepDefinition
   stepId: level1
   title: "Stufe 1 - niedriges Stockwerk, Gel\xE4nder, stehen"
-  instruction: Steh hier und nimm den Raum um dich herum wahr.
+  instruction: Nimm dir einen Moment und sieh dich in Ruhe um.
   state:
     floorIndex: 1
     railing: 0

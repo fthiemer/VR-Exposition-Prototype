@@ -80,12 +80,14 @@ private static HeightStepDefinition Level(string id, string title, int floorInde
 
 private static string InstructionFor(TaskType task)
         {
+            // Phrased so no instruction depends on a place the participant cannot see. "Stand
+            // here" left people looking for a marked spot that does not exist.
             switch (task)
             {
                 case TaskType.ApproachEdge: return "Wenn du bereit bist, geh langsam zur Kante.";
                 case TaskType.LookDown:     return "Tritt an die Kante und schau nach unten.";
-                case TaskType.CrossPlank:   return "Geh in deinem eigenen Tempo über den Steg.";
-                default:                    return "Steh hier und nimm den Raum um dich herum wahr.";
+                case TaskType.CrossPlank:   return "Geh in deinem eigenen Tempo über den Steg bis ans Ende.";
+                default:                    return "Nimm dir einen Moment und sieh dich in Ruhe um.";
             }
         }
     }
