@@ -18,6 +18,8 @@ namespace Exposure.EditorTools
     {
         private const string ScenarioPath = "Assets/_Exposure/Scenarios/Acrophobia/Scenario_Acrophobia.asset";
         private const string CatalogPath  = "Assets/_Exposure/Scenarios/Acrophobia/FearedOutcomes_Acrophobia.asset";
+        private const string ConfettiPath = "Assets/Samples/XR Interaction Toolkit/3.4.1/Starter Assets/" +
+                                            "DemoAssets/Prefabs/Interactables/Confetti.prefab";
 
         [MenuItem("Exposure/Setup Acrophobia Scene")]
         public static void Setup()
@@ -99,8 +101,35 @@ namespace Exposure.EditorTools
 
             var particleFeedback = feedbackRoot.GetComponent<ParticleBurstFeedback>()
                                    ?? Undo.AddComponent<ParticleBurstFeedback>(feedbackRoot.gameObject);
+            // Confetti burst from XRI's Starter Assets, instantiated once into the scene so
+            // the feedback component has a ParticleSystem to play.
+            var burst = feedbackRoot.Find("CompletionBurst");
+            if (burst == null)
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ConfettiPath);
+                if (prefab != null)
+                {
+                    var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab, feedbackRoot);
+                    go.name = "CompletionBurst";
+                    Undo.RegisterCreatedObjectUndo(go, "Create CompletionBurst");
+                    go.transform.localPosition = new Vector3(0f, 0.2f, 2.5f);
+                    // The prefab ships rotated so it emits along -Y; aim it upwards instead,
+                    // otherwise the confetti fires down through the platform.
+                    go.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+                    burst = go.transform;
+                }
+                else
+                {
+                    Debug.LogWarning($"[Exposure] Confetti prefab not found at {ConfettiPath} -- " +
+                                     "completion burst left unassigned.");
+                }
+            }
+
             var particleSo = new SerializedObject(particleFeedback);
             particleSo.FindProperty("playAt").objectReferenceValue = marker;
+            if (burst != null)
+                particleSo.FindProperty("burst").objectReferenceValue =
+                    burst.GetComponentInChildren<ParticleSystem>();
             particleSo.ApplyModifiedProperties();
 
             var trackerSo = new SerializedObject(tracker);
