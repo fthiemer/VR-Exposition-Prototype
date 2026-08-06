@@ -35,8 +35,10 @@ namespace Exposure
         [Tooltip("Seconds of looking down required for the look-down task.")]
         [SerializeField, Min(0.5f)] private float lookDownSecondsRequired = 3f;
 
-        [Tooltip("Seconds to hold position for the stand task.")]
-        [SerializeField, Min(1f)] private float standSecondsRequired = 10f;
+        [Tooltip("Seconds the task's condition must be held continuously before the level counts as done. " +
+                 "Kept short for testing; clinically this belongs in the minutes range and should become " +
+                 "a scenario-level setting rather than a scene value.")]
+        [SerializeField, Min(0f)] private float holdSecondsRequired = 10f;
 
         [Header("Avoidance cues")]
         [Tooltip("Seconds of no progress before a gentle cue is raised.")]
@@ -48,13 +50,23 @@ namespace Exposure
         public float MinDistanceToEdge { get; private set; } = -1f;
         public float SecondsLookingDown { get; private set; }
 
+        /// <summary>Seconds the current task's condition has been held continuously, 0 when not held.</summary>
+        public float SecondsConditionHeld { get; private set; }
+
+        /// <summary>0..1 progress towards completing the current task, for UI/audio feedback.</summary>
+        public float HoldProgress01 =>
+            holdSecondsRequired <= 0f ? 0f : Mathf.Clamp01(SecondsConditionHeld / holdSecondsRequired);
+
+        /// <summary>Raised when the task's condition starts or stops being met, for immediate feedback.</summary>
+        public event Action<bool> OnConditionHeldChanged;
+
         public event Action<string> OnAvoidanceDetected;
 
         private TaskType _task;
         private Action _onCompleted;
         private bool _running;
         private float _elapsed;
-        private float _standDwell;
+        private bool _conditionWasMet;
         private float _lastCueTime = -999f;
 
         private Transform Head
@@ -66,13 +78,14 @@ namespace Exposure
             }
         }
 
-        public void BeginTask(TaskType task, Action onCompleted)
+public void BeginTask(TaskType task, Action onCompleted)
         {
             _task = task;
             _onCompleted = onCompleted;
             _running = true;
             _elapsed = 0f;
-            _standDwell = 0f;
+            SecondsConditionHeld = 0f;
+            _conditionWasMet = false;
             SecondsLookingDown = 0f;
             MinDistanceToEdge = -1f;
         }
@@ -83,7 +96,7 @@ namespace Exposure
             _onCompleted = null;
         }
 
-        private void Update()
+private void Update()
         {
             if (!_running || Head == null) return;
 
@@ -98,7 +111,18 @@ namespace Exposure
 
             if (lookingDown) SecondsLookingDown += Time.deltaTime;
 
-            if (IsComplete(atEdge, lookingDown))
+            // Meeting the geometric condition for a single frame is not the exposure -- it has
+            // to be *held*, otherwise brushing past the edge instantly completes the level.
+            bool conditionMet = IsConditionMet(atEdge, lookingDown);
+            if (conditionMet != _conditionWasMet)
+            {
+                _conditionWasMet = conditionMet;
+                OnConditionHeldChanged?.Invoke(conditionMet);
+            }
+
+            SecondsConditionHeld = conditionMet ? SecondsConditionHeld + Time.deltaTime : 0f;
+
+            if (conditionMet && SecondsConditionHeld >= holdSecondsRequired)
             {
                 _running = false;
                 var cb = _onCompleted;
@@ -110,7 +134,11 @@ namespace Exposure
             CheckAvoidance(atEdge);
         }
 
-        private bool IsComplete(bool atEdge, bool lookingDown)
+/// <summary>
+        /// The instantaneous geometric condition for the current task. Completion additionally
+        /// requires holding this for <c>holdSecondsRequired</c>, handled in Update().
+        /// </summary>
+        private bool IsConditionMet(bool atEdge, bool lookingDown)
         {
             switch (_task)
             {
@@ -118,16 +146,13 @@ namespace Exposure
                     return atEdge;
 
                 case TaskType.LookDown:
-                    return atEdge && SecondsLookingDown >= lookDownSecondsRequired;
+                    return atEdge && lookingDown;
 
                 case TaskType.CrossPlank:
-                    // Crossing is complete once the participant is past the edge line,
-                    // i.e. standing out on the plank rather than on the platform.
                     return IsBeyondEdge();
 
                 default: // Stand
-                    _standDwell += Time.deltaTime;
-                    return _standDwell >= standSecondsRequired;
+                    return true;
             }
         }
 
