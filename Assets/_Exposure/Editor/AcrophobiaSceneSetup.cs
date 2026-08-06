@@ -104,6 +104,15 @@ namespace Exposure.EditorTools
                 envSo.ApplyModifiedProperties();
             }
 
+            ApplyGlassMaterials(envRoot.transform);
+
+            // A longer ride. Three seconds barely registered as travel; the transition is what
+            // sells having gone somewhere, and it is also the moment the participant has to
+            // settle into the new height before being asked anything.
+            var rideSo = new SerializedObject(env);
+            rideSo.FindProperty("transitionSeconds").floatValue = 8f;
+            rideSo.ApplyModifiedProperties();
+
             // --- task feedback: target marker, sound, particle burst ---
             var feedbackRoot = envRoot.transform.Find("TaskFeedback");
             if (feedbackRoot == null)
@@ -337,6 +346,54 @@ namespace Exposure.EditorTools
                 emission.SetBurst(0, new ParticleSystem.Burst(0f, 120));
             }
         }
+
+/// <summary>
+        /// Makes the glass surfaces actually see-through.
+        ///
+        /// They already carried a low alpha, but on an opaque material (render queue 2000) that
+        /// value is simply ignored -- so the "glass floor", the whole point of that difficulty
+        /// step, was a solid slab you could not look through. Transparency has to be switched on
+        /// at the material, not just expressed as an alpha value.
+        /// </summary>
+        private static void ApplyGlassMaterials(Transform envRoot)
+        {
+            var glass = TransparentLit("Cue_Glass", new Color(0.68f, 0.80f, 0.86f, 0.22f), smoothness: 0.95f);
+
+            foreach (var name in new[] { "SurfaceGlass", "RailingGlass" })
+            {
+                var t = envRoot.Find(name);
+                if (t == null) continue;
+                var r = t.GetComponent<Renderer>();
+                if (r != null) r.sharedMaterial = glass;
+            }
+        }
+
+        private static Material TransparentLit(string name, Color color, float smoothness)
+        {
+            const string folder = "Assets/_Exposure/Materials";
+            System.IO.Directory.CreateDirectory(folder);
+            string path = $"{folder}/{name}.mat";
+
+            var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (existing != null) return existing;
+
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            var mat = new Material(shader) { name = name };
+            mat.color = color;
+            mat.SetColor("_BaseColor", color);
+            mat.SetFloat("_Smoothness", smoothness);
+
+            mat.SetFloat("_Surface", 1f); // transparent
+            mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            mat.SetFloat("_ZWrite", 0f);
+            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+
+            AssetDatabase.CreateAsset(mat, path);
+            return mat;
+        }
+
 
 
     }
