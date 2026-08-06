@@ -48,7 +48,9 @@ namespace Exposure.EditorTools
                 var go = new GameObject("EdgeMarker");
                 Undo.RegisterCreatedObjectUndo(go, "Create EdgeMarker");
                 go.transform.SetParent(envRoot.transform, false);
-                // Front edge of the 4 x 4 m platform, which is centred at z = 0.5.
+                // Front edge of the ~2 x 2 m platform. Local to AcrophobiaEnvironment, which is
+                // itself offset so the platform centre sits on the world origin -- the spawn
+                // point is the scene's origin rather than something a script moves.
                 go.transform.localPosition = new Vector3(0f, 0f, 2.5f);
                 go.transform.localRotation = Quaternion.identity; // forward = +z = out over the drop
                 edge = go.transform;

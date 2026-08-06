@@ -998,7 +998,7 @@ Transform:
   m_GameObject: {fileID: 311400929}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -1.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1031,7 +1031,7 @@ MonoBehaviour:
   edgeReachedDistance: 0.6
   lookDownAngle: 35
   lookDownSecondsRequired: 3
-  standSecondsRequired: 10
+  holdSecondsRequired: 10
   avoidanceAfterSeconds: 20
   avoidanceCooldownSeconds: 20
 --- !u!21 &319301812
@@ -3020,7 +3020,7 @@ MonoBehaviour:
   verticalOffset: -0.1
   fallbackEyeHeight: 1.6
   minPlausibleHeadHeight: 1
-  revalidateIntervalSeconds: 2
+  settleTimeoutSeconds: 10
   panelSize: {x: 0.7, y: 0.5}
   panelColor: {r: 0.06, g: 0.09, b: 0.11, a: 0.94}
   buttonColor: {r: 0.16, g: 0.36, b: 0.44, a: 1}
@@ -5071,6 +5071,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1820897918385990095, guid: d6878e1999eb4b44a9f5a263af86c185, type: 3}
+      propertyPath: m_RequestedTrackingOriginMode
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 2218496723442559053, guid: d6878e1999eb4b44a9f5a263af86c185, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -5081,7 +5085,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2218496723442559053, guid: d6878e1999eb4b44a9f5a263af86c185, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1.5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2218496723442559053, guid: d6878e1999eb4b44a9f5a263af86c185, type: 3}
       propertyPath: m_LocalRotation.w
