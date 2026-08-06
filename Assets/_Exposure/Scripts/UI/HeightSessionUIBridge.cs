@@ -58,6 +58,14 @@ private void HandleState(SessionState state)
                                    () => session.ConfirmReady());
                     break;
 
+                case SessionState.AwaitingConditionAck:
+                    // Name what changes up there before the environment changes, so the
+                    // participant is agreeing to this specific step and already knows the task.
+                    ui.ShowConfirm(UIText.Get("condition_ack", _pendingLevelTitle, _pendingInstruction),
+                                   UIText.Get("condition_ack_confirm"),
+                                   () => session.ConfirmCondition());
+                    break;
+
                 case SessionState.TaskActive:
                     // Non-blocking: the task itself starts regardless of this panel, this
                     // just tells the participant what to physically do (feedback item 7 --

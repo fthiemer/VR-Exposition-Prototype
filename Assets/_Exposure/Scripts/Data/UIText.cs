@@ -13,6 +13,8 @@ namespace Exposure
         {
             ["ready_screen"] = "Als Nächstes: {0}\n\nBereit, nach oben zu gehen?",
             ["ready_confirm"] = "Ich bin bereit",
+            ["condition_ack"] = "Dort oben erwartet dich:\n{0}\n\nDeine Aufgabe:\n{1}",
+            ["condition_ack_confirm"] = "Hochfahren",
             ["task_dismiss"] = "Verstanden",
             ["predict_question"] = "Was, denkst du, wird hier oben passieren?",
             ["conviction_before_question"] = "Wie überzeugt bist du, dass das passieren wird?",

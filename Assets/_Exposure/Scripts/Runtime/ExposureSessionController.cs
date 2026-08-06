@@ -10,6 +10,7 @@ namespace Exposure
         Idle,
         Onboarding,
         AwaitingReady,
+        AwaitingConditionAck,
         AwaitingPrediction,
         TaskActive,
         AwaitingOutcome,
@@ -91,6 +92,7 @@ namespace Exposure
         private OutcomeReport? _outcome;
         private bool _taskDone;
         private bool _readyConfirmed;
+        private bool _conditionAcknowledged;
 
         /// <summary>Environment state to apply before the first level (ground floor).</summary>
         protected abstract TState DefaultState { get; }
@@ -148,6 +150,13 @@ namespace Exposure
         /// <summary>Called by the ready screen once the participant confirms.</summary>
         public void ConfirmReady() => _readyConfirmed = true;
 
+        /// <summary>
+        /// Called once the participant has been told what changes on the next floor and
+        /// confirms it. Splitting this from ConfirmReady means the environment never changes
+        /// under someone who has not just agreed to that specific change.
+        /// </summary>
+        public void ConfirmCondition() => _conditionAcknowledged = true;
+
         /// <summary>Manual stop by participant or therapist. Always permitted.</summary>
         public void StopSession(string reason = "Stopped on request")
         {
@@ -187,6 +196,18 @@ namespace Exposure
                 SetState(SessionState.AwaitingReady);
                 _readyConfirmed = false;
                 while (!_readyConfirmed)
+                {
+                    if (ShouldAbort()) { Abort(HeartRateReason()); yield break; }
+                    yield return null;
+                }
+
+                // --- second gate: say what will be different up there, then confirm again ---
+                // Agreeing to "go up" is not the same as agreeing to an open edge or a glass
+                // floor. Naming the change before it happens keeps the participant deciding
+                // about the actual step rather than being moved into it.
+                SetState(SessionState.AwaitingConditionAck);
+                _conditionAcknowledged = false;
+                while (!_conditionAcknowledged)
                 {
                     if (ShouldAbort()) { Abort(HeartRateReason()); yield break; }
                     yield return null;
