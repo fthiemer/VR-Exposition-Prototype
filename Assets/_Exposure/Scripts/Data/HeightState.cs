@@ -55,14 +55,19 @@ namespace Exposure
         [Tooltip("Wind sound/visual sway intensity as an additional sensory cue.")]
         public float windIntensity;
 
+        /// <summary>
+        /// Ground floor: the state the participant starts in, before any level. Deliberately
+        /// floor 0 -- level 1 is the first floor, so confirming the first level is what
+        /// produces the first elevator ride.
+        /// </summary>
         public static HeightState Default => new HeightState
         {
-            floorIndex = 1,
+            floorIndex = 0,
             railing = RailingMode.SolidRailing,
             surface = SurfaceType.Solid,
             task = TaskType.Stand,
             safetyNetVisible = true,
-            windIntensity = 0.1f
+            windIntensity = 0f
         };
     }
 }
