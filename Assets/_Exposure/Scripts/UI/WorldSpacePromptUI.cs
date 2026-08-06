@@ -31,8 +31,10 @@ namespace Exposure.UI
         [SerializeField] private float fallbackEyeHeight = 1.6f;
         [Tooltip("Head heights below this are treated as not-yet-tracked and get the fallback instead.")]
         [SerializeField] private float minPlausibleHeadHeight = 1.0f;
-        [Tooltip("How long to keep watching for a first plausible head pose after a panel appears. " +
-                 "Once one arrives the panel is placed for good and stops following the head.")]
+        [Tooltip("How long to keep watching for a first plausible head pose after a panel appears, " +
+                 "before giving up and leaving it where it is.")]
+        [SerializeField, Min(0f)] private float settleTimeoutSeconds = 10f;
+
         [Tooltip("How far the panel may drift from its ideal spot before it follows. Below this " +
                  "it stays put, so small head movement does not make it swim.")]
         [SerializeField, Min(0f)] private float followDeadZoneMeters = 0.22f;
