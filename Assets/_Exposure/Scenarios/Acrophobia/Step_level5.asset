@@ -14,15 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightStepDefinition
   stepId: level5
   title: Level 5 - near rooftop, open edge, glass floor
-  instruction: 
-  durationSeconds: 480
-  isBaselineBreathing: 0
-  habituationGated: 1
-  vasGateThreshold: 30
-  consecutiveReadingsRequired: 2
-  gateCheckIntervalSeconds: 45
-  askAnxietyAtStart: 1
-  askAnxietyAtEnd: 0
+  instruction: Stand here and take in the space around you.
   state:
     floorIndex: 8
     railing: 2
@@ -30,4 +22,5 @@ MonoBehaviour:
     task: 0
     safetyNetVisible: 0
     windIntensity: 0.4
-  guidingQuestion: What changed compared to the previous level?
+  durationSeconds: 120
+  guidingQuestion: What did you expect would happen, and what actually happened?

@@ -14,15 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightStepDefinition
   stepId: level4
   title: Level 4 - higher floor, glass barrier, grating floor
-  instruction: 
-  durationSeconds: 480
-  isBaselineBreathing: 0
-  habituationGated: 1
-  vasGateThreshold: 30
-  consecutiveReadingsRequired: 2
-  gateCheckIntervalSeconds: 45
-  askAnxietyAtStart: 1
-  askAnxietyAtEnd: 0
+  instruction: Step to the edge and look down.
   state:
     floorIndex: 6
     railing: 1
@@ -30,4 +22,5 @@ MonoBehaviour:
     task: 2
     safetyNetVisible: 1
     windIntensity: 0.3
-  guidingQuestion: What changed compared to the previous level?
+  durationSeconds: 120
+  guidingQuestion: What did you expect would happen, and what actually happened?

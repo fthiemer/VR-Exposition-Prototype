@@ -14,15 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightStepDefinition
   stepId: level2
   title: Level 2 - mid floor, railing, approach edge
-  instruction: 
-  durationSeconds: 480
-  isBaselineBreathing: 0
-  habituationGated: 1
-  vasGateThreshold: 30
-  consecutiveReadingsRequired: 2
-  gateCheckIntervalSeconds: 45
-  askAnxietyAtStart: 1
-  askAnxietyAtEnd: 0
+  instruction: When you are ready, walk slowly towards the edge.
   state:
     floorIndex: 3
     railing: 0
@@ -30,4 +22,5 @@ MonoBehaviour:
     task: 1
     safetyNetVisible: 1
     windIntensity: 0.1
-  guidingQuestion: What changed compared to the previous level?
+  durationSeconds: 120
+  guidingQuestion: What did you expect would happen, and what actually happened?

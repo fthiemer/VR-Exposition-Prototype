@@ -13,14 +13,12 @@ MonoBehaviour:
   m_Name: Scenario_Acrophobia
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightScenarioDefinition
   scenarioName: Acrophobia - High-Rise Rooftop & Glass Elevator
-  description: 'Gold-standard VR exposure (Freeman et al. 2018): up to 5 sittings,
-    habituation-gated ascent through height levels. Anxiety is controlled via railing/edge
-    protection, surface exposure and a visible safety net, not via floor count alone.'
-  source: Freeman et al. (2018), Lancet Psychiatry; Francova et al. (2025), JBTEP
+  description: Graded height exposure run as behavioural experiments. Intensity is
+    controlled via edge protection, underfoot surface and a visible safety net, not
+    via floor count alone.
+  source: Level design informed by acrophobia literature; progression follows inhibitory-learning
+    principles (Craske et al. 2014)
   maxHeartRateAbort: 200
-  pacedBreathingSeconds: 0
-  maxSessions: 5
-  maxSessionMinutes: 24
   steps:
   - {fileID: 11400000, guid: 5906e140fc3116b4ea6fc7951ac49d92, type: 2}
   - {fileID: 11400000, guid: e135c76726573544daab39a619f65cec, type: 2}

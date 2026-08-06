@@ -957,6 +957,7 @@ GameObject:
   m_Component:
   - component: {fileID: 311400931}
   - component: {fileID: 311400930}
+  - component: {fileID: 311400932}
   m_Layer: 0
   m_Name: AcrophobiaEnvironment
   m_TagString: Untagged
@@ -1010,8 +1011,29 @@ Transform:
   - {fileID: 1384114374}
   - {fileID: 293682927}
   - {fileID: 718572964}
+  - {fileID: 1116196950}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &311400932
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 311400929}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1099f2a201d9e6448a7a91de39ffd2c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightTaskTracker
+  head: {fileID: 0}
+  edge: {fileID: 1116196950}
+  edgeReachedDistance: 0.6
+  lookDownAngle: 35
+  lookDownSecondsRequired: 3
+  standSecondsRequired: 10
+  avoidanceAfterSeconds: 20
+  avoidanceCooldownSeconds: 20
 --- !u!21 &319301812
 Material:
   serializedVersion: 8
@@ -2949,6 +2971,72 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 817356580}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &869808294
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 869808297}
+  - component: {fileID: 869808296}
+  - component: {fileID: 869808295}
+  m_Layer: 0
+  m_Name: ExposurePromptUI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &869808295
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 869808294}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba31f3955c167e942b81831fd03a35df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Exposure.Runtime::Exposure.UI.HeightSessionUIBridge
+  session: {fileID: 1844133913}
+  ui: {fileID: 869808296}
+--- !u!114 &869808296
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 869808294}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 437edacd0d86955469c9751a5bd782d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Exposure.Runtime::Exposure.UI.WorldSpacePromptUI
+  head: {fileID: 0}
+  distanceFromHead: 0.8
+  verticalOffset: -0.1
+  panelSize: {x: 0.7, y: 0.5}
+  panelColor: {r: 0.06, g: 0.09, b: 0.11, a: 0.94}
+  buttonColor: {r: 0.16, g: 0.36, b: 0.44, a: 1}
+  textColor: {r: 1, g: 1, b: 1, a: 1}
+--- !u!4 &869808297
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 869808294}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &870627825
 GameObject:
   m_ObjectHideFlags: 0
@@ -3225,6 +3313,37 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1044333267}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1116196949
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1116196950}
+  m_Layer: 0
+  m_Name: EdgeMarker
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1116196950
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1116196949}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 2.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 311400931}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1125721132
 GameObject:
   m_ObjectHideFlags: 0
@@ -4108,11 +4227,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightExposureSessionController
   scenario: {fileID: 11400000, guid: 4547846a49a8f42459f219662ba0e98b, type: 2}
+  fearedOutcomes: {fileID: 11400000, guid: 7ca497dc345736c469a38c035c85be7b, type: 2}
   startOnPlay: 1
   environmentControllerBehaviour: {fileID: 311400930}
-  anxietyPromptBehaviour: {fileID: 0}
+  predictionPromptBehaviour: {fileID: 869808296}
+  taskSourceBehaviour: {fileID: 311400932}
   biosignalSourceBehaviour: {fileID: 1844133912}
   sessionLoggerBehaviour: {fileID: 1844133911}
+  taskTimeoutSeconds: 480
 --- !u!4 &1844133914
 Transform:
   m_ObjectHideFlags: 0
@@ -4992,3 +5114,4 @@ SceneRoots:
   - {fileID: 2097830324}
   - {fileID: 311400931}
   - {fileID: 1844133914}
+  - {fileID: 869808297}
