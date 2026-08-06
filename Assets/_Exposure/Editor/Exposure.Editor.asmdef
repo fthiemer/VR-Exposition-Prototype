@@ -2,7 +2,9 @@
     "name": "Exposure.Editor",
     "rootNamespace": "Exposure.EditorTools",
     "references": [
-        "Exposure.Runtime"
+        "Exposure.Runtime",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [
         "Editor"

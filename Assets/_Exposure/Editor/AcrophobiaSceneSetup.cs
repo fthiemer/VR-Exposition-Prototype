@@ -2,6 +2,8 @@
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using Exposure.UI;
 
 namespace Exposure.EditorTools
@@ -112,6 +114,7 @@ namespace Exposure.EditorTools
             BuildPlatformBoundary(envRoot.transform, env);
             ApplyGlassMaterials(envRoot.transform);
             BuildEnvironmentAudio(envRoot.transform, env);
+            BuildPostProcessing();
 
             // A longer ride. Three seconds barely registered as travel; the transition is what
             // sells having gone somewhere, and it is also the moment the participant has to
@@ -436,6 +439,84 @@ namespace Exposure.EditorTools
             so.ApplyModifiedProperties();
         }
 
+
+        /// <summary>
+        /// Global post-processing volume: bloom, tonemapping and a light vignette.
+        ///
+        /// Kept deliberately restrained. On a Quest 2 every post effect is paid for twice, once
+        /// per eye, so this is the subtle end of each effect rather than the cinematic one —
+        /// bloom in fast mode with a high threshold, so only the sky and bright edges pick it up
+        /// and the scene does not turn milky. Tonemapping is the one that does the most work for
+        /// the least cost: without it the bright sky against the dark drop clips to flat white.
+        ///
+        /// Also switches post-processing on for the main camera and warns if the URP asset has
+        /// it disabled globally, which silently defeats the whole volume.
+        /// </summary>
+        private static void BuildPostProcessing()
+        {
+            const string folder = "Assets/_Exposure/Settings";
+            System.IO.Directory.CreateDirectory(folder);
+            const string profilePath = folder + "/ExposurePostProcessing.asset";
+
+            var profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(profilePath);
+            if (profile == null)
+            {
+                profile = ScriptableObject.CreateInstance<VolumeProfile>();
+                AssetDatabase.CreateAsset(profile, profilePath);
+            }
+
+            if (!profile.TryGet<Bloom>(out var bloom)) bloom = profile.Add<Bloom>(true);
+            bloom.active = true;
+            bloom.threshold.overrideState = true; bloom.threshold.value = 1.05f;
+            bloom.intensity.overrideState = true; bloom.intensity.value = 0.55f;
+            bloom.scatter.overrideState = true;   bloom.scatter.value = 0.6f;
+            bloom.highQualityFiltering.overrideState = true;
+            bloom.highQualityFiltering.value = false; // fast mode: this is a standalone headset
+
+            if (!profile.TryGet<Tonemapping>(out var tonemapping)) tonemapping = profile.Add<Tonemapping>(true);
+            tonemapping.active = true;
+            tonemapping.mode.overrideState = true;
+            tonemapping.mode.value = TonemappingMode.Neutral; // ACES shifts colour too hard here
+
+            if (!profile.TryGet<Vignette>(out var vignette)) vignette = profile.Add<Vignette>(true);
+            vignette.active = true;
+            vignette.intensity.overrideState = true; vignette.intensity.value = 0.18f;
+            vignette.smoothness.overrideState = true; vignette.smoothness.value = 0.6f;
+
+            EditorUtility.SetDirty(profile);
+
+            var volumeGo = GameObject.Find("ExposurePostProcessing");
+            if (volumeGo == null)
+            {
+                volumeGo = new GameObject("ExposurePostProcessing");
+                Undo.RegisterCreatedObjectUndo(volumeGo, "Create ExposurePostProcessing");
+            }
+            if (volumeGo.GetComponent<Volume>() == null) Undo.AddComponent<Volume>(volumeGo);
+
+            var volume = volumeGo.GetComponent<Volume>();
+            volume.isGlobal = true;
+            volume.priority = 0f;
+            volume.sharedProfile = profile;
+
+            // A volume alone does nothing if the camera does not render post-processing.
+            var cam = Camera.main;
+            if (cam != null)
+            {
+                var data = cam.GetComponent<UniversalAdditionalCameraData>();
+                if (data != null) data.renderPostProcessing = true;
+                else Debug.LogWarning("[Exposure] Main camera has no URP camera data -- " +
+                                      "post-processing could not be switched on.");
+            }
+            else
+            {
+                Debug.LogWarning("[Exposure] No MainCamera found -- post-processing left off on the camera.");
+            }
+
+            var urp = UniversalRenderPipeline.asset;
+            if (urp != null && !urp.supportsHDR)
+                Debug.Log("[Exposure] URP asset has HDR off. Bloom still works, but its " +
+                          "threshold above 1.0 has less to catch -- worth checking on device.");
+        }
 
         /// <summary>
         /// Creates the two ambient audio sources and hands them to the environment controller.

@@ -26,6 +26,7 @@ namespace Exposure.EditorTools
         private const string BuildingsPath =
             "Assets/3rd Party Assets/POLYBOX/hazelwoodloft/CITY_DATA_NEW/new_prefabs/" +
             "prefabs_day_buildings_skyscrapers";
+        private const string BirdsPath = "Assets/3rd Party Assets/POLYBOX/hazelwoodloft/Animation";
 
         [MenuItem("Exposure/Polish/Build City Backdrop")]
         public static void BuildBackdrop()
@@ -58,6 +59,7 @@ namespace Exposure.EditorTools
 
             BuildGroundPlane(root.transform);
             ScatterBuildings(root.transform, prefabs);
+            ScatterBirds(root.transform);
             ApplyDepthFog();
 
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
@@ -92,10 +94,6 @@ namespace Exposure.EditorTools
         }
 
         /// <summary>
-        /// A large plate far below, so looking down reads as "ground a long way away" rather
-        /// than "void". The drop itself is what the exposure is about, so it needs a bottom.
-        /// </summary>
-/// <summary>
         /// The street far below, so looking down reads as "ground a long way away" rather than
         /// "void". Sits at PlatformRig's own origin: the rig is the world, and it starts level
         /// with the participant at the ground floor and travels down as they ascend, so y=0 here
@@ -115,32 +113,6 @@ namespace Exposure.EditorTools
         }
 
         /// <summary>
-        /// Buildings in a ring, kept clear of the platform footprint so nothing intersects the
-        /// area the participant can physically walk in.
-        /// </summary>
-/// <summary>
-        /// Buildings in a ring, kept clear of the platform footprint so nothing intersects the
-        /// area the participant can physically walk in.
-        ///
-        /// Every renderer gets one of a few flat URP materials rather than the pack's own. Two
-        /// reasons: the pack ships built-in-pipeline materials, which render magenta under URP,
-        /// and at this distance the buildings are silhouettes anyway -- lighting them per-pixel
-        /// would cost Quest 2 frame time for detail nobody can resolve through the fog.
-        /// </summary>
-/// <summary>
-        /// Buildings in a ring around the tower, standing on the street plane.
-        ///
-        /// The pack is authored at city scale -- the prefabs measure 100-270 units tall, so at
-        /// their native size a single one would swallow a ten-storey building. Scaled down to
-        /// roughly 25-70 m and pushed out to 40-180 m, they read as an ordinary skyline seen
-        /// from a rooftop, which is the whole point: the height has to feel like a real place.
-        ///
-        /// Every renderer gets one of a few flat URP materials rather than the pack's own. Two
-        /// reasons: the pack ships built-in-pipeline materials, which render magenta under URP,
-        /// and at this distance the buildings are silhouettes anyway -- lighting them per-pixel
-        /// would cost Quest 2 frame time for detail nobody can resolve through the fog.
-        /// </summary>
-/// <summary>
         /// Buildings in a ring around the tower, standing on the street plane.
         ///
         /// The pack is authored at city scale -- the prefabs measure 100-270 units tall, so at
@@ -188,11 +160,55 @@ namespace Exposure.EditorTools
         }
 
         /// <summary>
-        /// Depth fog does three jobs at once here: it sells scale, hides how little detail the
-        /// far buildings carry, and lets the far clip plane come in closer, which is what keeps
-        /// this affordable on a Quest 2.
+        /// Birds circling below and level with the platform.
+        ///
+        /// Seeing birds *below* eye level is a cue with no ground-level equivalent, and unlike
+        /// the abstract rising spheres it is something people have actually experienced from a
+        /// high window. Animated prefabs from the POLYBOX pack, so this lives in the polished
+        /// path only -- the pack is gitignored and the blockout must stay free of it.
         /// </summary>
-/// <summary>
+        private static void ScatterBirds(Transform parent)
+        {
+            var prefabs = new List<GameObject>();
+            foreach (var guid in AssetDatabase.FindAssets("room5_bird", new[] { BirdsPath }))
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(guid));
+                if (prefab != null) prefabs.Add(prefab);
+            }
+
+            if (prefabs.Count == 0)
+            {
+                Debug.Log($"[Exposure] No bird prefabs under {BirdsPath} -- skipped. " +
+                          "They ship with the POLYBOX pack, which is gitignored.");
+                return;
+            }
+
+            var birds = new GameObject("Birds");
+            birds.transform.SetParent(parent, false);
+
+            Random.InitState(1312);
+            for (int i = 0; i < prefabs.Count * 2; i++)
+            {
+                var instance = (GameObject)PrefabUtility.InstantiatePrefab(
+                    prefabs[i % prefabs.Count], birds.transform);
+                if (instance == null) continue;
+
+                float angle = Random.Range(0f, Mathf.PI * 2f);
+                float radius = Random.Range(18f, 55f);
+
+                // Spread across the height the participant travels, so some are always below.
+                instance.transform.localPosition = new Vector3(
+                    Mathf.Cos(angle) * radius,
+                    Random.Range(6f, 30f),
+                    Mathf.Sin(angle) * radius);
+                instance.transform.localRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+
+                foreach (var collider in instance.GetComponentsInChildren<Collider>())
+                    Object.DestroyImmediate(collider);
+            }
+        }
+
+        /// <summary>
         /// Depth fog does three jobs at once here: it sells scale, hides how little detail the
         /// far buildings carry, and lets the far clip plane come in closer, which is what keeps
         /// this affordable on a Quest 2. Tuned to still show the nearest ring of buildings
