@@ -29,7 +29,9 @@ namespace Exposure
             string safe = string.IsNullOrEmpty(scenarioName) ? "session" : Sanitize(scenarioName);
             _path = Path.Combine(Application.persistentDataPath,
                 $"exposure_{safe}_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
-            Row("session_start", -1, scenarioName, "", "", "", "", "", 0f);
+            // Scenario name goes in outcome_id rather than step_id -- step_id must stay a
+            // level identifier so the column can be filtered on when reviewing.
+            Row("session_start", -1, "", Sanitize(scenarioName), "", "", "", "", 0f);
         }
 
         public void LogStepStart(int index, string stepId, float hr)
@@ -47,7 +49,7 @@ namespace Exposure
             => Row("step_end", index, stepId, "", "", "", "", "", hr);
 
         public void LogAbort(string reason, float hr)
-            => Row("abort", -1, Sanitize(reason), "", "", "", "", "", hr);
+            => Row("abort", -1, "", Sanitize(reason), "", "", "", "", hr);
 
         public void EndSession()
         {

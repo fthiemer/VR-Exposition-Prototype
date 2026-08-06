@@ -77,8 +77,11 @@ namespace Exposure.UI
         /// <summary>
         /// Summary framed around what was predicted versus what happened, since that
         /// difference -- not the height reached -- is what the session was about.
+        ///
+        /// Public so it can also be shown outside VR or exported for the therapist,
+        /// without having to replay the session.
         /// </summary>
-        private string BuildSummary()
+        public string BuildSummary()
         {
             var records = session.Experiments;
             if (records == null || records.Count == 0)
