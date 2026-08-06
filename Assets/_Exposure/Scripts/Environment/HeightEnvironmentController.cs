@@ -39,6 +39,10 @@ namespace Exposure
                  "Shown only for the plank surface.")]
         [SerializeField] private GameObject plankApron;
 
+        [Tooltip("Low kerb marking where the walkable area ends. Hidden for the plank, whose " +
+                 "whole point is an unguarded edge on both sides.")]
+        [SerializeField] private GameObject platformBoundary;
+
         [Header("Other Objects")]
         [SerializeField] private GameObject safetyNet;
         [SerializeField] private AudioSource windAudio;
@@ -57,6 +61,11 @@ namespace Exposure
             SetActive(surfaceGlass, state.surface == SurfaceType.Glass);
             SetActive(surfacePlank, state.surface == SurfaceType.Plank);
             SetActive(plankApron, state.surface == SurfaceType.Plank);
+
+            // The boundary tells the participant where the floor stops while they are looking
+            // down or ahead rather than at their feet. It is deliberately absent on the plank:
+            // there the exposed edge *is* the exercise.
+            SetActive(platformBoundary, state.surface != SurfaceType.Plank);
 
             SetActive(safetyNet, state.safetyNetVisible);
 

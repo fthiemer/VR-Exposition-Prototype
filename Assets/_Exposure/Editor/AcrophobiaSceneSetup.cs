@@ -28,6 +28,8 @@ namespace Exposure.EditorTools
         [MenuItem("Exposure/Setup Acrophobia Scene")]
         public static void Setup()
         {
+            if (RefuseDuringPlayMode()) return;
+
             var envRoot = GameObject.Find("AcrophobiaEnvironment");
             if (envRoot == null)
             {
@@ -104,6 +106,7 @@ namespace Exposure.EditorTools
                 envSo.ApplyModifiedProperties();
             }
 
+            BuildPlatformBoundary(envRoot.transform, env);
             ApplyGlassMaterials(envRoot.transform);
 
             // A longer ride. Three seconds barely registered as travel; the transition is what
@@ -255,6 +258,22 @@ namespace Exposure.EditorTools
                       "edge marker and task feedback are connected.");
         }
 
+/// <summary>
+        /// Editor generators must not run in play mode. They modify the scene and then call
+        /// MarkSceneDirty, which throws there -- so a run half-applies and then aborts, leaving
+        /// a scene that looks set up but is not. Refusing up front is the honest behaviour.
+        ///
+        /// Shared by the other generators, which have the same problem.
+        /// </summary>
+        internal static bool RefuseDuringPlayMode()
+        {
+            if (!EditorApplication.isPlaying) return false;
+            Debug.LogWarning("[Exposure] Editor setup does not run in play mode -- " +
+                             "stop play mode and run it again.");
+            return true;
+        }
+
+
         private static void AppendTo(SerializedProperty list, Object value)
         {
             list.InsertArrayElementAtIndex(list.arraySize);
@@ -367,6 +386,52 @@ namespace Exposure.EditorTools
                 if (r != null) r.sharedMaterial = glass;
             }
         }
+
+/// <summary>
+        /// A low kerb along the two open sides of the platform.
+        ///
+        /// Room-scale means the participant walks for real, and while looking down or straight
+        /// ahead they cannot see where the floor ends. A kerb they can feel underfoot and catch
+        /// in peripheral vision is the cheapest way to make the walkable area legible without
+        /// putting up a wall that would remove the exposure.
+        ///
+        /// Deliberately low: it marks the boundary, it does not protect from the edge. The front
+        /// stays open -- that is the drop the exercise is about -- and the rear is the building.
+        /// </summary>
+        private static void BuildPlatformBoundary(Transform envRoot, HeightEnvironmentController env)
+        {
+            var boundary = envRoot.Find("PlatformBoundary");
+            if (boundary == null)
+            {
+                var go = new GameObject("PlatformBoundary");
+                Undo.RegisterCreatedObjectUndo(go, "Create PlatformBoundary");
+                go.transform.SetParent(envRoot, false);
+                boundary = go.transform;
+            }
+
+            // Rebuild the kerbs so repeated runs cannot stack duplicates.
+            for (int i = boundary.childCount - 1; i >= 0; i--)
+                Object.DestroyImmediate(boundary.GetChild(i).gameObject);
+
+            var mat = TransparentLit("Cue_Boundary", new Color(0.95f, 0.78f, 0.25f, 0.75f), smoothness: 0.2f);
+
+            // Platform spans local z 0.5..2.5 and x -1..1. Kerbs run along both open sides.
+            foreach (var side in new[] { -1f, 1f })
+            {
+                var kerb = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                kerb.name = side < 0 ? "Kerb_Left" : "Kerb_Right";
+                kerb.transform.SetParent(boundary, false);
+                kerb.transform.localPosition = new Vector3(side * 1.02f, 0.04f, 1.5f);
+                kerb.transform.localScale = new Vector3(0.06f, 0.09f, 2f);
+                Object.DestroyImmediate(kerb.GetComponent<Collider>()); // must not trip anyone
+                kerb.GetComponent<Renderer>().sharedMaterial = mat;
+            }
+
+            var so = new SerializedObject(env);
+            so.FindProperty("platformBoundary").objectReferenceValue = boundary.gameObject;
+            so.ApplyModifiedProperties();
+        }
+
 
         private static Material TransparentLit(string name, Color color, float smoothness)
         {
