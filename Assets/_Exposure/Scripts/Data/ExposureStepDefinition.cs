@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Exposure
@@ -15,21 +16,10 @@ namespace Exposure
         public string stepId = "level";
         public string title = "New Level";
 
-        [TextArea(2, 4)]
-        [Tooltip("Task instruction shown to the participant when the level starts.")]
-        public string instruction;
-
-        [Header("Environment State For This Level")]
-        public TState state;
-
-        [Header("Fallback Timing")]
-        [Tooltip("Used only when no task detection is wired (blockout/editor testing). " +
-                 "Normally the level ends when the task is carried out, not on a timer.")]
-        public float durationSeconds = 120f;
-
-        [Header("Review (optional)")]
-        [TextArea(2, 3)]
-        [Tooltip("Reflection question offered after the level, e.g. 'What did you expect, and what happened?'")]
-        public string guidingQuestion;
+        [Header("Task Pool")]
+        [Tooltip("Tasks offered on this level. On first visit the easiest (lowest " +
+                 "difficultyRank) is offered; afterwards the participant may repeat it, try " +
+                 "another from the pool, or move up once at least one has been completed.")]
+        public List<TaskVariant<TState>> taskPool = new List<TaskVariant<TState>>();
     }
 }
