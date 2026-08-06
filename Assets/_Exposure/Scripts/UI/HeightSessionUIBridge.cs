@@ -17,6 +17,7 @@ namespace Exposure.UI
         [SerializeField] private WorldSpacePromptUI ui;
 
         private string _pendingLevelTitle = "";
+        private string _pendingInstruction = "";
 
         private void Reset() => ui = GetComponent<WorldSpacePromptUI>();
 
@@ -41,12 +42,13 @@ namespace Exposure.UI
             session.OnCoachMessage -= HandleCoachMessage;
         }
 
-        private void HandleStep(int index, ExposureStepDefinition<HeightState> step)
+private void HandleStep(int index, ExposureStepDefinition<HeightState> step)
         {
             _pendingLevelTitle = step != null ? step.title : $"Level {index + 1}";
+            _pendingInstruction = step != null ? step.instruction : "";
         }
 
-        private void HandleState(SessionState state)
+private void HandleState(SessionState state)
         {
             switch (state)
             {
@@ -54,6 +56,14 @@ namespace Exposure.UI
                     ui.ShowConfirm($"Next: {_pendingLevelTitle}\n\nReady to go up?",
                                    "I'm ready",
                                    () => session.ConfirmReady());
+                    break;
+
+                case SessionState.TaskActive:
+                    // Non-blocking: the task itself starts regardless of this panel, this
+                    // just tells the participant what to physically do (feedback item 7 --
+                    // "the task itself is never made clear").
+                    if (!string.IsNullOrWhiteSpace(_pendingInstruction))
+                        ui.ShowConfirm(_pendingInstruction, "Got it", () => { });
                     break;
 
                 case SessionState.Completed:
