@@ -19,15 +19,29 @@ namespace Exposure
         [Tooltip("Play the burst at the target marker rather than wherever this component sits.")]
         [SerializeField] private Transform playAt;
 
+        [Tooltip("Head transform used for the burst height. Leave empty to resolve Camera.main.")]
+        [SerializeField] private Transform head;
+
+        [Tooltip("Offset from head height, so the burst lands where the completion message is.")]
+        [SerializeField] private float heightOffset = -0.15f;
+
         public void TaskStarted(TaskType task) { }
 
         public void TaskProgress(float progress01, bool conditionHeld) { }
 
-        public void TaskCompleted()
+public void TaskCompleted()
         {
             if (burst == null) return;
 
-            if (playAt != null) burst.transform.position = playAt.position;
+            // Horizontally at the target, vertically at head height. On the floor the burst went
+            // off below the field of view, while the participant was looking at the panel telling
+            // them they were done -- the reward has to appear where the eyes already are.
+            var position = playAt != null ? playAt.position : transform.position;
+
+            if (head == null && Camera.main != null) head = Camera.main.transform;
+            if (head != null) position.y = head.position.y + heightOffset;
+
+            burst.transform.position = position;
             burst.Play();
         }
 
