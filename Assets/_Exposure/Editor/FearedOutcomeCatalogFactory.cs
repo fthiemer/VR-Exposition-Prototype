@@ -15,17 +15,17 @@ namespace Exposure.EditorTools
         private const string Folder = "Assets/_Exposure/Scenarios/Acrophobia";
 
         [MenuItem("Exposure/Generate Feared Outcome Catalog (placeholder)")]
-        public static void CreateCatalog()
+public static void CreateCatalog()
         {
             Directory.CreateDirectory(Folder);
 
             var catalog = ScriptableObject.CreateInstance<FearedOutcomeCatalog>();
-            catalog.sourceInstrument = "PLACEHOLDER - replace with validated items (ACQ thought scale / HIQ)";
-            catalog.outcomes.Add(new FearedOutcome { id = "balance", text = "I will lose my balance and fall." });
-            catalog.outcomes.Add(new FearedOutcome { id = "dizzy",   text = "I will get so dizzy I cannot hold myself up." });
-            catalog.outcomes.Add(new FearedOutcome { id = "support", text = "The railing or floor will not hold." });
-            catalog.outcomes.Add(new FearedOutcome { id = "control", text = "I will lose control of myself." });
-            catalog.outcomes.Add(new FearedOutcome { id = "panic",   text = "I will panic and not be able to get away." });
+            catalog.sourceInstrument = "PLATZHALTER - durch validierte Items ersetzen (ACQ-Gedankenskala / HIQ)";
+            catalog.outcomes.Add(new FearedOutcome { id = "balance", text = "Ich werde das Gleichgewicht verlieren und stürzen." });
+            catalog.outcomes.Add(new FearedOutcome { id = "dizzy",   text = "Mir wird so schwindelig, dass ich mich nicht mehr halten kann." });
+            catalog.outcomes.Add(new FearedOutcome { id = "support", text = "Das Geländer oder der Boden hält nicht." });
+            catalog.outcomes.Add(new FearedOutcome { id = "control", text = "Ich verliere die Kontrolle über mich selbst." });
+            catalog.outcomes.Add(new FearedOutcome { id = "panic",   text = "Ich bekomme Panik und komme nicht mehr weg." });
 
             AssetDatabase.CreateAsset(catalog, $"{Folder}/FearedOutcomes_Acrophobia.asset");
             AssetDatabase.SaveAssets();

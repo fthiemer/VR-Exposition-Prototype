@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 341cdf250865cd244b527d2a889c2ca4, type: 3}
   m_Name: Scenario_Acrophobia
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightScenarioDefinition
-  scenarioName: Acrophobia - High-Rise Rooftop & Glass Elevator
-  description: Graded height exposure run as behavioural experiments. Intensity is
-    controlled via edge protection, underfoot surface and a visible safety net, not
-    via floor count alone.
-  source: Level design informed by acrophobia literature; progression follows inhibitory-learning
-    principles (Craske et al. 2014)
+  scenarioName: Akrophobie - Hochhaus-Dach & Glasaufzug
+  description: "Gestufte H\xF6henexposition als Verhaltensexperimente. Die Intensit\xE4t
+    wird \xFCber Kantenschutz, Bodenbelag und ein sichtbares Sicherheitsnetz gesteuert,
+    nicht allein \xFCber die Stockwerkzahl."
+  source: Levelgestaltung informiert durch Akrophobie-Literatur; die Progression
+    folgt Prinzipien des Inhibitory Learning (Craske et al. 2014)
   maxHeartRateAbort: 200
   steps:
   - {fileID: 11400000, guid: 5906e140fc3116b4ea6fc7951ac49d92, type: 2}

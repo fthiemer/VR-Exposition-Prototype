@@ -19,30 +19,30 @@ namespace Exposure.EditorTools
         private const string Folder = "Assets/_Exposure/Scenarios/Acrophobia";
 
         [MenuItem("Exposure/Generate Acrophobia Study Scenario")]
-        public static void CreateAcrophobiaScenario()
+public static void CreateAcrophobiaScenario()
         {
             Directory.CreateDirectory(Folder);
 
             var scenario = ScriptableObject.CreateInstance<HeightScenarioDefinition>();
-            scenario.scenarioName = "Acrophobia - High-Rise Rooftop & Glass Elevator";
-            scenario.description = "Graded height exposure run as behavioural experiments. Intensity is " +
-                                   "controlled via edge protection, underfoot surface and a visible safety " +
-                                   "net, not via floor count alone.";
-            scenario.source = "Level design informed by acrophobia literature; progression follows " +
-                              "inhibitory-learning principles (Craske et al. 2014)";
+            scenario.scenarioName = "Akrophobie - Hochhaus-Dach & Glasaufzug";
+            scenario.description = "Gestufte Höhenexposition als Verhaltensexperimente. Die Intensität wird " +
+                                   "über Kantenschutz, Bodenbelag und ein sichtbares Sicherheitsnetz gesteuert, " +
+                                   "nicht allein über die Stockwerkzahl.";
+            scenario.source = "Levelgestaltung informiert durch Akrophobie-Literatur; die Progression folgt " +
+                              "Prinzipien des Inhibitory Learning (Craske et al. 2014)";
             scenario.maxHeartRateAbort = 200f;
 
-            scenario.steps.Add(Level("level1", "Level 1 - low floor, railing, stand",
+            scenario.steps.Add(Level("level1", "Stufe 1 - niedriges Stockwerk, Geländer, stehen",
                 1, RailingMode.SolidRailing, SurfaceType.Solid, TaskType.Stand, true, 0.05f));
-            scenario.steps.Add(Level("level2", "Level 2 - mid floor, railing, approach edge",
+            scenario.steps.Add(Level("level2", "Stufe 2 - mittleres Stockwerk, Geländer, an die Kante treten",
                 3, RailingMode.SolidRailing, SurfaceType.Solid, TaskType.ApproachEdge, true, 0.1f));
-            scenario.steps.Add(Level("level3", "Level 3 - higher floor, glass barrier, look down",
+            scenario.steps.Add(Level("level3", "Stufe 3 - höheres Stockwerk, Glasbrüstung, nach unten schauen",
                 5, RailingMode.GlassBarrier, SurfaceType.Solid, TaskType.LookDown, true, 0.2f));
-            scenario.steps.Add(Level("level4", "Level 4 - higher floor, glass barrier, grating floor",
+            scenario.steps.Add(Level("level4", "Stufe 4 - höheres Stockwerk, Glasbrüstung, Gitterboden",
                 6, RailingMode.GlassBarrier, SurfaceType.Grating, TaskType.LookDown, true, 0.3f));
-            scenario.steps.Add(Level("level5", "Level 5 - near rooftop, open edge, glass floor",
+            scenario.steps.Add(Level("level5", "Stufe 5 - nahe Dachterrasse, offene Kante, Glasboden",
                 8, RailingMode.Open, SurfaceType.Glass, TaskType.Stand, false, 0.4f));
-            scenario.steps.Add(Level("level6", "Level 6 - rooftop, open edge, cross plank",
+            scenario.steps.Add(Level("level6", "Stufe 6 - Dachterrasse, offene Kante, über den Steg gehen",
                 10, RailingMode.Open, SurfaceType.Plank, TaskType.CrossPlank, false, 0.5f));
 
             foreach (var s in scenario.steps)
@@ -57,7 +57,7 @@ namespace Exposure.EditorTools
             Debug.Log("[Exposure] Acrophobia scenario generated under " + Folder);
         }
 
-        private static HeightStepDefinition Level(string id, string title, int floorIndex,
+private static HeightStepDefinition Level(string id, string title, int floorIndex,
             RailingMode railing, SurfaceType surface, TaskType task, bool safetyNetVisible, float wind)
         {
             var step = ScriptableObject.CreateInstance<HeightStepDefinition>();
@@ -65,7 +65,7 @@ namespace Exposure.EditorTools
             step.title = title;
             step.instruction = InstructionFor(task);
             step.durationSeconds = 120f; // fallback only, used when no task detection is wired
-            step.guidingQuestion = "What did you expect would happen, and what actually happened?";
+            step.guidingQuestion = "Was hast du erwartet, und was ist tatsächlich passiert?";
             step.state = new HeightState
             {
                 floorIndex = floorIndex,
@@ -78,14 +78,14 @@ namespace Exposure.EditorTools
             return step;
         }
 
-        private static string InstructionFor(TaskType task)
+private static string InstructionFor(TaskType task)
         {
             switch (task)
             {
-                case TaskType.ApproachEdge: return "When you are ready, walk slowly towards the edge.";
-                case TaskType.LookDown:     return "Step to the edge and look down.";
-                case TaskType.CrossPlank:   return "Cross the plank at your own pace.";
-                default:                    return "Stand here and take in the space around you.";
+                case TaskType.ApproachEdge: return "Wenn du bereit bist, geh langsam zur Kante.";
+                case TaskType.LookDown:     return "Tritt an die Kante und schau nach unten.";
+                case TaskType.CrossPlank:   return "Geh in deinem eigenen Tempo über den Steg.";
+                default:                    return "Steh hier und nimm den Raum um dich herum wahr.";
             }
         }
     }

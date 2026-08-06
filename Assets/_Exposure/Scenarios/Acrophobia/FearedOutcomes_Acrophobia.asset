@@ -12,16 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df556b6bffb94ef47afd7c9c0b8f5e44, type: 3}
   m_Name: FearedOutcomes_Acrophobia
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.FearedOutcomeCatalog
-  sourceInstrument: PLACEHOLDER - replace with validated items (ACQ thought scale
+  sourceInstrument: PLATZHALTER - durch validierte Items ersetzen (ACQ-Gedankenskala
     / HIQ)
   outcomes:
   - id: balance
-    text: I will lose my balance and fall.
+    text: "Ich werde das Gleichgewicht verlieren und st\xFCrzen."
   - id: dizzy
-    text: I will get so dizzy I cannot hold myself up.
+    text: Mir wird so schwindelig, dass ich mich nicht mehr halten kann.
   - id: support
-    text: The railing or floor will not hold.
+    text: "Das Gel\xE4nder oder der Boden h\xE4lt nicht."
   - id: control
-    text: I will lose control of myself.
+    text: "Ich verliere die Kontrolle \xFCber mich selbst."
   - id: panic
-    text: I will panic and not be able to get away.
+    text: Ich bekomme Panik und komme nicht mehr weg.

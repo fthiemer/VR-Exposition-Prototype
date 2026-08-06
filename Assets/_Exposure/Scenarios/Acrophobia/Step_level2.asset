@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Step_level2
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightStepDefinition
   stepId: level2
-  title: Level 2 - mid floor, railing, approach edge
-  instruction: When you are ready, walk slowly towards the edge.
+  title: "Stufe 2 - mittleres Stockwerk, Gel\xE4nder, an die Kante treten"
+  instruction: Wenn du bereit bist, geh langsam zur Kante.
   state:
     floorIndex: 3
     railing: 0
@@ -23,4 +23,4 @@ MonoBehaviour:
     safetyNetVisible: 1
     windIntensity: 0.1
   durationSeconds: 120
-  guidingQuestion: What did you expect would happen, and what actually happened?
+  guidingQuestion: "Was hast du erwartet, und was ist tats\xE4chlich passiert?"

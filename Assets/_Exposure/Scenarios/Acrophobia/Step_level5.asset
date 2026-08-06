@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Step_level5
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightStepDefinition
   stepId: level5
-  title: Level 5 - near rooftop, open edge, glass floor
-  instruction: Stand here and take in the space around you.
+  title: Stufe 5 - nahe Dachterrasse, offene Kante, Glasboden
+  instruction: Steh hier und nimm den Raum um dich herum wahr.
   state:
     floorIndex: 8
     railing: 2
@@ -23,4 +23,4 @@ MonoBehaviour:
     safetyNetVisible: 0
     windIntensity: 0.4
   durationSeconds: 120
-  guidingQuestion: What did you expect would happen, and what actually happened?
+  guidingQuestion: "Was hast du erwartet, und was ist tats\xE4chlich passiert?"

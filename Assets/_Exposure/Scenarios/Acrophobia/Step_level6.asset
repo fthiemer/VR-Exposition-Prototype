@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Step_level6
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightStepDefinition
   stepId: level6
-  title: Level 6 - rooftop, open edge, cross plank
-  instruction: Cross the plank at your own pace.
+  title: "Stufe 6 - Dachterrasse, offene Kante, \xFCber den Steg gehen"
+  instruction: "Geh in deinem eigenen Tempo \xFCber den Steg."
   state:
     floorIndex: 10
     railing: 2
@@ -23,4 +23,4 @@ MonoBehaviour:
     safetyNetVisible: 0
     windIntensity: 0.5
   durationSeconds: 120
-  guidingQuestion: What did you expect would happen, and what actually happened?
+  guidingQuestion: "Was hast du erwartet, und was ist tats\xE4chlich passiert?"

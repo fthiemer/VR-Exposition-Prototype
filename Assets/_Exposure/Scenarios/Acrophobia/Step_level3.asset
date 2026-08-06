@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Step_level3
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightStepDefinition
   stepId: level3
-  title: Level 3 - higher floor, glass barrier, look down
-  instruction: Step to the edge and look down.
+  title: "Stufe 3 - h\xF6heres Stockwerk, Glasbr\xFCstung, nach unten schauen"
+  instruction: Tritt an die Kante und schau nach unten.
   state:
     floorIndex: 5
     railing: 1
@@ -23,4 +23,4 @@ MonoBehaviour:
     safetyNetVisible: 1
     windIntensity: 0.2
   durationSeconds: 120
-  guidingQuestion: What did you expect would happen, and what actually happened?
+  guidingQuestion: "Was hast du erwartet, und was ist tats\xE4chlich passiert?"

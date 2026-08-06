@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Step_level4
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightStepDefinition
   stepId: level4
-  title: Level 4 - higher floor, glass barrier, grating floor
-  instruction: Step to the edge and look down.
+  title: "Stufe 4 - h\xF6heres Stockwerk, Glasbr\xFCstung, Gitterboden"
+  instruction: Tritt an die Kante und schau nach unten.
   state:
     floorIndex: 6
     railing: 1
@@ -23,4 +23,4 @@ MonoBehaviour:
     safetyNetVisible: 1
     windIntensity: 0.3
   durationSeconds: 120
-  guidingQuestion: What did you expect would happen, and what actually happened?
+  guidingQuestion: "Was hast du erwartet, und was ist tats\xE4chlich passiert?"
