@@ -35,6 +35,8 @@ namespace Exposure.EditorTools
         [MenuItem("Exposure/Setup Height Cues")]
         public static void Build()
         {
+            if (AcrophobiaSceneSetup.RefuseDuringPlayMode()) return;
+
             var rig = GameObject.Find("PlatformRig");
             if (rig == null)
             {

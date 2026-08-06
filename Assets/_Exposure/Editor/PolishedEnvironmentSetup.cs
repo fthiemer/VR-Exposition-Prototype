@@ -30,6 +30,8 @@ namespace Exposure.EditorTools
         [MenuItem("Exposure/Polish/Build City Backdrop")]
         public static void BuildBackdrop()
         {
+            if (AcrophobiaSceneSetup.RefuseDuringPlayMode()) return;
+
             var rig = GameObject.Find("PlatformRig");
             if (rig == null)
             {
