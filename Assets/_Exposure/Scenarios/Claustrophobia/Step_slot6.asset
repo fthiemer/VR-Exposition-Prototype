@@ -14,15 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.RoomStepDefinition
   stepId: slot6
   title: Slot 6 - dark, ladder, hatch open
-  instruction: 
-  durationSeconds: 300
-  isBaselineBreathing: 0
-  askAnxietyAtStart: 1
-  askAnxietyAtEnd: 1
-  state:
-    lighting: 2
-    hatch: 0
-    ladderPresent: 1
-    doorClosed: 0
-    doorLocked: 0
-  guidingQuestion: What changed in the room compared to the previous slot?
+  taskPool:
+  - taskId: slot6
+    instruction: What changed in the room compared to the previous slot?
+    state:
+      lighting: 2
+      hatch: 0
+      ladderPresent: 1
+      doorClosed: 0
+      doorLocked: 0
+    durationSeconds: 300
+    difficultyRank: 0

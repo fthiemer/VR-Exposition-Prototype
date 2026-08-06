@@ -14,13 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightStepDefinition
   stepId: level3
   title: "Stufe 3 - h\xF6heres Stockwerk, Glasbr\xFCstung, nach unten schauen"
-  instruction: Tritt an die Kante und schau nach unten.
-  state:
-    floorIndex: 5
-    railing: 1
-    surface: 0
-    task: 2
-    safetyNetVisible: 1
-    windIntensity: 0.2
-  durationSeconds: 120
-  guidingQuestion: "Was hast du erwartet, und was ist tats\xE4chlich passiert?"
+  taskPool:
+  - taskId: LookDown
+    instruction: Tritt an die Kante und schau nach unten.
+    state:
+      floorIndex: 5
+      railing: 1
+      surface: 0
+      task: 2
+      safetyNetVisible: 1
+      windIntensity: 0.2
+    durationSeconds: 120
+    difficultyRank: 0

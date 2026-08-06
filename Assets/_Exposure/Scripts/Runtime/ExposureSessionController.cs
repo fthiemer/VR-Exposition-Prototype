@@ -8,42 +8,52 @@ namespace Exposure
     public enum SessionState
     {
         Idle,
-        Onboarding,
+        Intro,
+        FloorSelect,
         AwaitingReady,
         AwaitingConditionAck,
-        AwaitingPrediction,
         TaskActive,
-        AwaitingOutcome,
-        SessionComplete,
+        TaskChoice,
+        Closing,
         Completed,
         Aborted
     }
 
-    /// <summary>One completed behavioural experiment, kept for the session summary.</summary>
-    public struct ExperimentRecord
+    /// <summary>Which post-task option the participant picked. Never stored, purely flow control.</summary>
+    internal enum TaskChoiceOption { Repeat, OtherTask, NextFloor, EndSession }
+
+    /// <summary>
+    /// The session's expectancy triple (Pittig et al. 2023): E1 stated at the start, O and E2
+    /// re-rated at the end, both on the ground. Measured once per session, not per task -- see
+    /// 11_Spezifikation_Erwartungspruefung.md for why.
+    /// </summary>
+    public struct SessionOutcomeRecord
     {
-        public int stepIndex;
-        public string stepId;
         public string outcomeId;
-        public int convictionBefore;
-        public int convictionAfter;
-        public bool occurred;
-        public int anxiety0to100;
-        public float minDistanceToEdge;
+        public int expectancyBefore;   // E1, 0-10
+        public int occurred;           // O, 0-10
+        public int expectancyAfter;    // E2, 0-10
+
+        public int ExpectancyChange => expectancyBefore - expectancyAfter;
+        public int ExpectancyViolation => expectancyBefore - occurred;
+
+        /// <summary>Fraction of the violation that turned into actual belief change. Pittig's second outcome predictor.</summary>
+        public float LearningRate => ExpectancyViolation == 0 ? 0f : (float)ExpectancyChange / ExpectancyViolation;
     }
 
     /// <summary>
     /// Core of the prototype: drives an exposure scenario as a state machine, generic over
     /// the scenario-specific environment state <typeparamref name="TState"/>.
     ///
-    /// Each level is run as a behavioural experiment:
-    ///   ready -> state a prediction -> carry out the task -> review what happened.
+    /// A session runs: state expectancy on the ground (E1) -> choose a floor -> repeatedly
+    /// carry out a task and choose what's next (repeat / different task / one floor up / end)
+    /// -> back on the ground, rate what happened and re-rate expectancy (O, E2).
     ///
-    /// Progression is gated on expectancy violation (was the feared outcome disconfirmed?),
-    /// not on within-session habituation. Habituation is still recorded -- it remains
-    /// clinically informative -- but gating on it would end each level exactly when no
-    /// expectation is left to violate, i.e. when no further learning can occur
-    /// (Craske et al. 2014; Hamlett et al. 2023; see README).
+    /// Progression unlocks the next floor permanently once a task is completed -- not gated on
+    /// expectancy violation, which Pittig et al. (2023) found does not itself predict outcome;
+    /// only expectancy *change* and learning rate do, and those are session-level metrics for
+    /// the therapist, decoupled from the floor-to-floor decision (which stays the participant's,
+    /// after a qualitative coach question, matching Freeman et al. 2018).
     ///
     /// Dependencies are decoupled via interfaces. Adding a scenario needs only an
     /// IEnvironmentController&lt;TNewState&gt; plus a closed subclass of this controller.
@@ -54,6 +64,10 @@ namespace Exposure
         [SerializeField] private ExposureScenarioDefinition<TState> scenario;
         [SerializeField] private FearedOutcomeCatalog fearedOutcomes;
         [SerializeField] private bool startOnPlay = false;
+
+        [Tooltip("Skip the expectancy questions (intro E1, closing O/E2). Testing convenience; " +
+                 "the floor-to-floor flow and progression are unaffected.")]
+        [SerializeField] private bool skipIntro = false;
 
         [Header("Dependencies (must implement the respective interfaces)")]
         [SerializeField] private MonoBehaviour environmentControllerBehaviour; // IEnvironmentController<TState>
@@ -69,18 +83,19 @@ namespace Exposure
         // --- Events for UI/audio ---
         public event Action<SessionState> OnStateChanged;
         public event Action<int, ExposureStepDefinition<TState>> OnStepChanged;
+        public event Action<TaskVariant<TState>> OnTaskVariantChanged;
         public event Action<string> OnCoachMessage;
 
         public SessionState State { get; private set; } = SessionState.Idle;
         public int CurrentStepIndex { get; private set; } = -1;
         public int CurrentSessionNumber { get; private set; } = 1;
+        public TaskVariant<TState> CurrentVariant { get; private set; }
 
         /// <summary>Highest level index unlocked so far -- all of these stay selectable.</summary>
         public int HighestUnlockedStepIndex { get; private set; }
 
-        public IReadOnlyList<ExperimentRecord> Experiments => _experiments;
-
-        private readonly List<ExperimentRecord> _experiments = new List<ExperimentRecord>();
+        /// <summary>Expectancy triple from the most recently completed session, if any.</summary>
+        public SessionOutcomeRecord? LastSessionOutcome { get; private set; }
 
         private IEnvironmentController<TState> _env;
         private IPredictionPrompt _prompt;
@@ -91,8 +106,10 @@ namespace Exposure
         private Prediction? _prediction;
         private OutcomeReport? _outcome;
         private bool _taskDone;
+        private bool _taskCompletedByDetection;
         private bool _readyConfirmed;
         private bool _conditionAcknowledged;
+        private int _lastAppliedFloor = -1;
 
         /// <summary>Environment state to apply before the first level (ground floor).</summary>
         protected abstract TState DefaultState { get; }
@@ -128,18 +145,19 @@ namespace Exposure
             if (startOnPlay) StartSession();
         }
 
-        /// <summary>Starts a sitting at the level last reached.</summary>
+        /// <summary>Starts a sitting, offering the highest unlocked floor as the default choice.</summary>
         public void StartSession() => StartSessionAt(HighestUnlockedStepIndex);
 
         /// <summary>
-        /// Starts a sitting at a chosen level. Any already-unlocked level may be revisited;
-        /// jumping past the unlocked front is not allowed.
+        /// Starts a sitting with the given floor pre-selected for the floor-choice screen. Any
+        /// already-unlocked floor may be chosen there instead; jumping past the unlocked front
+        /// is not possible.
         /// </summary>
         public void StartSessionAt(int stepIndex)
         {
             if (scenario == null) { Debug.LogError("[Exposure] No scenario assigned."); return; }
             bool canStart = State == SessionState.Idle || State == SessionState.Completed
-                            || State == SessionState.Aborted || State == SessionState.SessionComplete;
+                            || State == SessionState.Aborted;
             if (!canStart) return;
 
             stepIndex = Mathf.Clamp(stepIndex, 0, Mathf.Min(HighestUnlockedStepIndex, scenario.steps.Count - 1));
@@ -168,10 +186,12 @@ namespace Exposure
         public void ResetProgress()
         {
             StopAllCoroutines();
-            _experiments.Clear();
+            LastSessionOutcome = null;
+            CurrentVariant = null;
             HighestUnlockedStepIndex = 0;
             CurrentSessionNumber = 1;
             CurrentStepIndex = -1;
+            _lastAppliedFloor = -1;
             SetState(SessionState.Idle);
         }
 
@@ -179,18 +199,69 @@ namespace Exposure
         {
             _logger?.BeginSession($"{scenario.scenarioName} (session {CurrentSessionNumber})");
 
-            SetState(SessionState.Onboarding);
             // Ground floor first -- never drop someone straight into height.
             _env?.Apply(DefaultState, instant: true);
+            _lastAppliedFloor = 0;
             yield return null;
 
-            for (int i = startIndex; i < scenario.steps.Count; i++)
+            // --- 1. Einführung: choose the feared outcome, state E1 (ground, skippable) ---
+            SetState(SessionState.Intro);
+            _prediction = null;
+            if (_prompt != null && fearedOutcomes != null && !skipIntro)
             {
-                var step = scenario.steps[i];
-                if (step == null) continue;
+                _prompt.AskExpectancyBefore(fearedOutcomes, p => _prediction = p);
+                while (_prediction == null)
+                {
+                    if (ShouldAbort()) { Abort(HeartRateReason()); yield break; }
+                    yield return null;
+                }
+            }
+            else
+            {
+                _prediction = new Prediction { outcomeId = "none", expectancy0to10 = -1 };
+            }
+            _logger?.LogExpectancyBefore(_prediction.Value.outcomeId, _prediction.Value.expectancy0to10, CurrentHeartRate());
 
-                CurrentStepIndex = i;
-                OnStepChanged?.Invoke(i, step);
+            // --- 2. Höhenauswahl: any unlocked floor, once per session ---
+            SetState(SessionState.FloorSelect);
+            int floorIndex = Mathf.Clamp(startIndex, 0, HighestUnlockedStepIndex);
+            if (_prompt != null)
+            {
+                int chosenFloor = -1;
+                int optionCount = Mathf.Min(HighestUnlockedStepIndex + 1, scenario.steps.Count);
+                var floorLabels = new string[optionCount];
+                for (int f = 0; f < optionCount; f++)
+                    floorLabels[f] = scenario.steps[f] != null ? scenario.steps[f].title : $"Etage {f + 1}";
+
+                _prompt.ShowChoice(UIText.Get("floor_select_question"), floorLabels, i => chosenFloor = i);
+                while (chosenFloor < 0)
+                {
+                    if (ShouldAbort()) { Abort(HeartRateReason()); yield break; }
+                    yield return null;
+                }
+                floorIndex = chosenFloor;
+            }
+
+            TaskVariant<TState> variant = null;
+            bool sessionEnding = false;
+
+            // --- 3./4. Aufgabe + Entscheidung, wiederholt bis Sitzungsende ---
+            while (!sessionEnding)
+            {
+                var step = scenario.steps[floorIndex];
+                if (step == null || step.taskPool == null || step.taskPool.Count == 0)
+                {
+                    Debug.LogError($"[Exposure] Level at index {floorIndex} has no task pool.");
+                    Abort("Empty task pool");
+                    yield break;
+                }
+
+                CurrentStepIndex = floorIndex;
+                OnStepChanged?.Invoke(floorIndex, step);
+
+                if (variant == null) variant = EasiestVariant(step);
+                CurrentVariant = variant;
+                OnTaskVariantChanged?.Invoke(variant);
 
                 // --- ready screen: no automatic level change ---
                 SetState(SessionState.AwaitingReady);
@@ -202,9 +273,6 @@ namespace Exposure
                 }
 
                 // --- second gate: say what will be different up there, then confirm again ---
-                // Agreeing to "go up" is not the same as agreeing to an open edge or a glass
-                // floor. Naming the change before it happens keeps the participant deciding
-                // about the actual step rather than being moved into it.
                 SetState(SessionState.AwaitingConditionAck);
                 _conditionAcknowledged = false;
                 while (!_conditionAcknowledged)
@@ -213,89 +281,135 @@ namespace Exposure
                     yield return null;
                 }
 
-                // --- move to the level (elevator ride doubles as the transition) ---
-                _env?.Apply(step.state, instant: false);
-                _logger?.LogStepStart(i, step.stepId, CurrentHeartRate());
-
-                // --- predict ---
-                SetState(SessionState.AwaitingPrediction);
-                _prediction = null;
-                if (_prompt != null && fearedOutcomes != null)
-                {
-                    _prompt.AskPrediction(fearedOutcomes, p => _prediction = p);
-                    while (_prediction == null)
-                    {
-                        if (ShouldAbort()) { Abort(HeartRateReason()); yield break; }
-                        yield return null;
-                    }
-                }
-                else
-                {
-                    // No UI wired (blockout/editor testing) -> skip with a neutral record.
-                    _prediction = new Prediction { outcomeId = "none", convictionPercent = -1 };
-                }
-                _logger?.LogPrediction(i, step.stepId, _prediction.Value.outcomeId,
-                                       _prediction.Value.convictionPercent, CurrentHeartRate());
+                // --- move to the level (elevator ride only on an actual floor change) ---
+                bool isFloorChange = floorIndex != _lastAppliedFloor;
+                _env?.Apply(variant.state, instant: !isFloorChange);
+                _lastAppliedFloor = floorIndex;
+                _logger?.LogStepStart(floorIndex, step.stepId, CurrentHeartRate());
 
                 // --- carry out the task ---
                 SetState(SessionState.TaskActive);
-                yield return RunTask(step);
+                yield return RunTask(variant);
                 if (State == SessionState.Aborted) yield break;
 
-                // --- review ---
-                SetState(SessionState.AwaitingOutcome);
-                _outcome = null;
-                if (_prompt != null && fearedOutcomes != null)
+                _logger?.LogStepEnd(floorIndex, step.stepId, _tasks?.MinDistanceToEdge ?? -1f, CurrentHeartRate());
+
+                if (_taskCompletedByDetection && floorIndex + 1 < scenario.steps.Count)
+                    HighestUnlockedStepIndex = Mathf.Max(HighestUnlockedStepIndex, floorIndex + 1);
+
+                if (_taskCompletedByDetection)
+                    OnCoachMessage?.Invoke(UIText.Get("safer_than_before_coach"));
+
+                // --- Entscheidung: repeat / different task / one floor up / end session ---
+                SetState(SessionState.TaskChoice);
+                var options = new List<TaskChoiceOption> { TaskChoiceOption.Repeat };
+                var choiceLabels = new List<string> { UIText.Get("choice_repeat") };
+                if (step.taskPool.Count > 1)
                 {
-                    _prompt.AskOutcome(fearedOutcomes, _prediction.Value, o => _outcome = o);
-                    while (_outcome == null)
+                    options.Add(TaskChoiceOption.OtherTask);
+                    choiceLabels.Add(UIText.Get("choice_other_task"));
+                }
+                if (floorIndex + 1 <= HighestUnlockedStepIndex)
+                {
+                    options.Add(TaskChoiceOption.NextFloor);
+                    choiceLabels.Add(UIText.Get("choice_next_floor"));
+                }
+                options.Add(TaskChoiceOption.EndSession);
+                choiceLabels.Add(UIText.Get("choice_end_session"));
+
+                int chosenOption = _prompt == null ? 0 : -1;
+                if (_prompt != null)
+                {
+                    _prompt.ShowChoice(UIText.Get("task_choice_question"), choiceLabels.ToArray(), i => chosenOption = i);
+                    while (chosenOption < 0)
                     {
                         if (ShouldAbort()) { Abort(HeartRateReason()); yield break; }
                         yield return null;
                     }
                 }
-                else
+
+                switch (options[chosenOption])
                 {
-                    _outcome = new OutcomeReport { occurred = false, convictionPercent = -1, anxiety0to100 = -1 };
-                }
-
-                RecordExperiment(i, step);
-                _logger?.LogStepEnd(i, step.stepId, CurrentHeartRate());
-
-                // Disconfirmation unlocks the next level; if it did occur, the same level
-                // stays available for another attempt rather than forcing progress.
-                bool disconfirmed = !_outcome.Value.occurred;
-                if (disconfirmed && i + 1 < scenario.steps.Count)
-                    HighestUnlockedStepIndex = Mathf.Max(HighestUnlockedStepIndex, i + 1);
-
-                if (!disconfirmed)
-                {
-                    OnCoachMessage?.Invoke(UIText.Get("repeat_level_coach"));
-                    i--; // repeat the same level
+                    case TaskChoiceOption.OtherTask:
+                        variant = NextVariant(step, variant);
+                        break;
+                    case TaskChoiceOption.NextFloor:
+                        floorIndex++;
+                        variant = null;
+                        break;
+                    case TaskChoiceOption.EndSession:
+                        sessionEnding = true;
+                        break;
+                    // Repeat: keep floorIndex and variant as they are.
                 }
             }
 
-            HighestUnlockedStepIndex = scenario.steps.Count - 1;
+            // --- 5. Abschluss: back on the ground, O and E2 ---
+            _env?.Apply(DefaultState, instant: false);
+            SetState(SessionState.Closing);
+            _outcome = null;
+            if (_prompt != null && fearedOutcomes != null && _prediction.Value.outcomeId != "none")
+            {
+                _prompt.AskOutcome(fearedOutcomes, _prediction.Value, o => _outcome = o);
+                while (_outcome == null)
+                {
+                    if (ShouldAbort()) { Abort(HeartRateReason()); yield break; }
+                    yield return null;
+                }
+            }
+            else
+            {
+                _outcome = new OutcomeReport { occurred0to10 = -1, expectancy0to10 = -1 };
+            }
+
+            RecordSessionOutcome();
             SetState(SessionState.Completed);
             _logger?.EndSession();
         }
 
+        /// <summary>Lowest difficultyRank in the pool -- offered first on a level's first visit.</summary>
+        private static TaskVariant<TState> EasiestVariant(ExposureStepDefinition<TState> step)
+        {
+            TaskVariant<TState> best = null;
+            foreach (var v in step.taskPool)
+                if (best == null || v.difficultyRank < best.difficultyRank) best = v;
+            return best;
+        }
+
+        /// <summary>Next variant after <paramref name="current"/> in difficulty order, wrapping around.</summary>
+        private static TaskVariant<TState> NextVariant(ExposureStepDefinition<TState> step, TaskVariant<TState> current)
+        {
+            if (step.taskPool.Count <= 1) return current;
+            var sorted = new List<TaskVariant<TState>>(step.taskPool);
+            sorted.Sort((a, b) => a.difficultyRank.CompareTo(b.difficultyRank));
+            int idx = sorted.IndexOf(current);
+            if (idx < 0) return sorted[0];
+            return sorted[(idx + 1) % sorted.Count];
+        }
+
         /// <summary>
-        /// Runs the level's task, ending on completion or on a safety timeout. Heart rate is
-        /// monitored throughout; there is no anxiety polling during the task.
+        /// Runs the task, ending on completion or on a safety timeout. Heart rate is monitored
+        /// throughout; there is no other polling during the task.
         /// </summary>
-        private IEnumerator RunTask(ExposureStepDefinition<TState> step)
+        private IEnumerator RunTask(TaskVariant<TState> variant)
         {
             _taskDone = false;
+            _taskCompletedByDetection = false;
 
             if (_tasks == null)
             {
-                // No task detection wired -> fall back to the step's nominal duration.
-                yield return WaitWithHeartRate(step.durationSeconds);
+                // No task detection wired -> fall back to the variant's nominal duration, and
+                // count that as completion so blockout/editor testing can still progress.
+                yield return WaitWithHeartRate(variant.durationSeconds);
+                _taskCompletedByDetection = true;
                 yield break;
             }
 
-            _tasks.BeginTask(step.state is HeightState hs ? hs.task : TaskType.Stand, () => _taskDone = true);
+            _tasks.BeginTask(variant.state is HeightState hs ? hs.task : TaskType.Stand, () =>
+            {
+                _taskDone = true;
+                _taskCompletedByDetection = true;
+            });
 
             float elapsed = 0f;
             while (!_taskDone && elapsed < taskTimeoutSeconds)
@@ -319,24 +433,18 @@ namespace Exposure
             }
         }
 
-        private void RecordExperiment(int index, ExposureStepDefinition<TState> step)
+        private void RecordSessionOutcome()
         {
-            var rec = new ExperimentRecord
+            var rec = new SessionOutcomeRecord
             {
-                stepIndex = index,
-                stepId = step.stepId,
                 outcomeId = _prediction?.outcomeId ?? "none",
-                convictionBefore = _prediction?.convictionPercent ?? -1,
-                convictionAfter = _outcome?.convictionPercent ?? -1,
-                occurred = _outcome?.occurred ?? false,
-                anxiety0to100 = _outcome?.anxiety0to100 ?? -1,
-                minDistanceToEdge = _tasks?.MinDistanceToEdge ?? -1f
+                expectancyBefore = _prediction?.expectancy0to10 ?? -1,
+                occurred = _outcome?.occurred0to10 ?? -1,
+                expectancyAfter = _outcome?.expectancy0to10 ?? -1
             };
-            _experiments.Add(rec);
+            LastSessionOutcome = rec;
 
-            _logger?.LogOutcome(index, step.stepId, rec.outcomeId, rec.occurred,
-                                rec.convictionAfter, rec.anxiety0to100,
-                                rec.minDistanceToEdge, CurrentHeartRate());
+            _logger?.LogOutcome(rec.outcomeId, rec.expectancyBefore, rec.occurred, rec.expectancyAfter, CurrentHeartRate());
         }
 
         private void HandleAvoidance(string cue) => OnCoachMessage?.Invoke(cue);

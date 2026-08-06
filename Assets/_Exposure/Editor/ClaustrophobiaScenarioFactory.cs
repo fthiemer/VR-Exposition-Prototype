@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -66,15 +67,23 @@ namespace Exposure.EditorTools
             var step = ScriptableObject.CreateInstance<RoomStepDefinition>();
             step.stepId = id;
             step.title = title;
-            step.durationSeconds = 300f;
-            step.guidingQuestion = "What changed in the room compared to the previous slot?";
-            step.state = new RoomState
+            step.taskPool = new List<TaskVariant<RoomState>>
             {
-                lighting = light,
-                hatch = hatch,
-                ladderPresent = ladder,
-                doorClosed = doorClosed,
-                doorLocked = doorLocked
+                new TaskVariant<RoomState>
+                {
+                    taskId = id,
+                    instruction = "What changed in the room compared to the previous slot?",
+                    durationSeconds = 300f,
+                    difficultyRank = 0,
+                    state = new RoomState
+                    {
+                        lighting = light,
+                        hatch = hatch,
+                        ladderPresent = ladder,
+                        doorClosed = doorClosed,
+                        doorLocked = doorLocked
+                    }
+                }
             };
             return step;
         }

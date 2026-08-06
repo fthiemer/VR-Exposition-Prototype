@@ -18,7 +18,6 @@ MonoBehaviour:
     and safety signal (ladder).'
   source: Mies (2025), University of Mainz
   maxHeartRateAbort: 200
-  pacedBreathingSeconds: 180
   steps:
   - {fileID: 11400000, guid: 1ad61e5dbbf81de489180edde3b8c4b7, type: 2}
   - {fileID: 11400000, guid: f49d5258f8c964c4dbd363b768eeb965, type: 2}

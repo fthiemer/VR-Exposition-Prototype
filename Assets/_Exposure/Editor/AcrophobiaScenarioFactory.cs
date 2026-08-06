@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -63,17 +64,24 @@ private static HeightStepDefinition Level(string id, string title, int floorInde
             var step = ScriptableObject.CreateInstance<HeightStepDefinition>();
             step.stepId = id;
             step.title = title;
-            step.instruction = InstructionFor(task);
-            step.durationSeconds = 120f; // fallback only, used when no task detection is wired
-            step.guidingQuestion = "Was hast du erwartet, und was ist tatsächlich passiert?";
-            step.state = new HeightState
+            step.taskPool = new List<TaskVariant<HeightState>>
             {
-                floorIndex = floorIndex,
-                railing = railing,
-                surface = surface,
-                task = task,
-                safetyNetVisible = safetyNetVisible,
-                windIntensity = wind
+                new TaskVariant<HeightState>
+                {
+                    taskId = task.ToString(),
+                    instruction = InstructionFor(task),
+                    durationSeconds = 120f, // fallback only, used when no task detection is wired
+                    difficultyRank = 0,
+                    state = new HeightState
+                    {
+                        floorIndex = floorIndex,
+                        railing = railing,
+                        surface = surface,
+                        task = task,
+                        safetyNetVisible = safetyNetVisible,
+                        windIntensity = wind
+                    }
+                }
             };
             return step;
         }

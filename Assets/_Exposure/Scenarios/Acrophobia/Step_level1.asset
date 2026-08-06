@@ -14,13 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightStepDefinition
   stepId: level1
   title: "Stufe 1 - niedriges Stockwerk, Gel\xE4nder, stehen"
-  instruction: Nimm dir einen Moment und sieh dich in Ruhe um.
-  state:
-    floorIndex: 1
-    railing: 0
-    surface: 0
-    task: 0
-    safetyNetVisible: 1
-    windIntensity: 0.05
-  durationSeconds: 120
-  guidingQuestion: "Was hast du erwartet, und was ist tats\xE4chlich passiert?"
+  taskPool:
+  - taskId: Stand
+    instruction: Nimm dir einen Moment und sieh dich in Ruhe um.
+    state:
+      floorIndex: 1
+      railing: 0
+      surface: 0
+      task: 0
+      safetyNetVisible: 1
+      windIntensity: 0.05
+    durationSeconds: 120
+    difficultyRank: 0

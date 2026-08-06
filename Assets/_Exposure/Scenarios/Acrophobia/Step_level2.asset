@@ -14,13 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightStepDefinition
   stepId: level2
   title: "Stufe 2 - mittleres Stockwerk, Gel\xE4nder, an die Kante treten"
-  instruction: Wenn du bereit bist, geh langsam zur Kante.
-  state:
-    floorIndex: 3
-    railing: 0
-    surface: 0
-    task: 1
-    safetyNetVisible: 1
-    windIntensity: 0.1
-  durationSeconds: 120
-  guidingQuestion: "Was hast du erwartet, und was ist tats\xE4chlich passiert?"
+  taskPool:
+  - taskId: ApproachEdge
+    instruction: Wenn du bereit bist, geh langsam zur Kante.
+    state:
+      floorIndex: 3
+      railing: 0
+      surface: 0
+      task: 1
+      safetyNetVisible: 1
+      windIntensity: 0.1
+    durationSeconds: 120
+    difficultyRank: 0

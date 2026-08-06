@@ -14,13 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightStepDefinition
   stepId: level5
   title: Stufe 5 - nahe Dachterrasse, offene Kante, Glasboden
-  instruction: Nimm dir einen Moment und sieh dich in Ruhe um.
-  state:
-    floorIndex: 8
-    railing: 2
-    surface: 2
-    task: 0
-    safetyNetVisible: 0
-    windIntensity: 0.4
-  durationSeconds: 120
-  guidingQuestion: "Was hast du erwartet, und was ist tats\xE4chlich passiert?"
+  taskPool:
+  - taskId: Stand
+    instruction: Nimm dir einen Moment und sieh dich in Ruhe um.
+    state:
+      floorIndex: 8
+      railing: 2
+      surface: 2
+      task: 0
+      safetyNetVisible: 0
+      windIntensity: 0.4
+    durationSeconds: 120
+    difficultyRank: 0

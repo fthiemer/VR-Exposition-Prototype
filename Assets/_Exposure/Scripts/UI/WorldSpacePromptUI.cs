@@ -11,8 +11,9 @@ namespace Exposure.UI
     /// World-space behavioural-experiment prompts, operated by hand tracking.
     ///
     /// The panel is built at runtime and placed in front of the participant only when a
-    /// question is due -- two appearances per level (predict, review), nothing in between,
-    /// so the exposure itself stays uninterrupted.
+    /// question is due -- expectancy on the ground before the first task, review on the
+    /// ground after the last one, plus the floor/task choices in between -- so the height
+    /// exposure itself stays uninterrupted.
     ///
     /// Ratings use discrete buttons rather than sliders on purpose: dragging a slider
     /// handle with tracked hands is unreliable, while poking a button is not.
@@ -81,23 +82,23 @@ namespace Exposure.UI
 
         // ---------------------------------------------------------------- IPredictionPrompt
 
-public void AskPrediction(FearedOutcomeCatalog catalog, Action<Prediction> onAnswered)
+public void AskExpectancyBefore(FearedOutcomeCatalog catalog, Action<Prediction> onAnswered)
         {
             if (catalog == null || catalog.outcomes.Count == 0)
             {
-                onAnswered?.Invoke(new Prediction { outcomeId = "none", convictionPercent = -1 });
+                onAnswered?.Invoke(new Prediction { outcomeId = "none", expectancy0to10 = -1 });
                 return;
             }
 
             ShowOutcomeChoice(catalog, chosenId =>
-                ShowRating(UIText.Get("conviction_before_question"),
-                           UIText.Get("scale_conviction_low"),
-                           UIText.Get("scale_conviction_mid"),
-                           UIText.Get("scale_conviction_high"),
-                           percent =>
+                ShowRating(UIText.Get("expectancy_before_question"),
+                           UIText.Get("scale_expectancy_low"),
+                           UIText.Get("scale_expectancy_mid"),
+                           UIText.Get("scale_expectancy_high"),
+                           value =>
                 {
                     Hide();
-                    onAnswered?.Invoke(new Prediction { outcomeId = chosenId, convictionPercent = percent });
+                    onAnswered?.Invoke(new Prediction { outcomeId = chosenId, expectancy0to10 = value });
                 }));
         }
 
@@ -105,26 +106,33 @@ public void AskOutcome(FearedOutcomeCatalog catalog, Prediction prediction, Acti
         {
             string predictedText = TextForOutcome(catalog, prediction.outcomeId);
 
-            ShowYesNo(UIText.Get("outcome_question", predictedText), occurred =>
-                ShowRating(UIText.Get("conviction_after_question"),
-                           UIText.Get("scale_conviction_low"),
-                           UIText.Get("scale_conviction_mid"),
-                           UIText.Get("scale_conviction_high"),
-                           convictionAfter =>
-                    ShowRating(UIText.Get("anxiety_question"),
-                               UIText.Get("scale_anxiety_low"),
-                               UIText.Get("scale_anxiety_mid"),
-                               UIText.Get("scale_anxiety_high"),
-                               anxiety =>
-                    {
-                        Hide();
-                        onAnswered?.Invoke(new OutcomeReport
-                        {
-                            occurred = occurred,
-                            convictionPercent = convictionAfter,
-                            anxiety0to100 = anxiety
-                        });
-                    })));
+            ShowRating(UIText.Get("outcome_occurred_question", predictedText),
+                       UIText.Get("scale_occurred_low"),
+                       UIText.Get("scale_occurred_mid"),
+                       UIText.Get("scale_occurred_high"),
+                       occurred =>
+                ShowRating(UIText.Get("expectancy_after_question"),
+                           UIText.Get("scale_expectancy_low"),
+                           UIText.Get("scale_expectancy_mid"),
+                           UIText.Get("scale_expectancy_high"),
+                           expectancyAfter =>
+                {
+                    Hide();
+                    onAnswered?.Invoke(new OutcomeReport { occurred0to10 = occurred, expectancy0to10 = expectancyAfter });
+                }));
+        }
+
+        /// <summary>Generic labelled-button choice, used for floor selection and the post-task menu.</summary>
+        public void ShowChoice(string message, string[] labels, Action<int> onChosen)
+        {
+            Show();
+            _title.text = message;
+            ClearButtons();
+            for (int i = 0; i < labels.Length; i++)
+            {
+                int idx = i;
+                AddButton(labels[i], () => onChosen?.Invoke(idx));
+            }
         }
 
         // ---------------------------------------------------------------- public helpers
@@ -154,15 +162,6 @@ private void ShowOutcomeChoice(FearedOutcomeCatalog catalog, Action<string> onCh
                 var captured = outcome.id;
                 AddButton(outcome.text, () => onChosen?.Invoke(captured));
             }
-        }
-
-private void ShowYesNo(string question, Action<bool> onAnswered)
-        {
-            Show();
-            _title.text = question;
-            ClearButtons();
-            AddButton(UIText.Get("outcome_yes"), () => onAnswered?.Invoke(true));
-            AddButton(UIText.Get("outcome_no"), () => onAnswered?.Invoke(false));
         }
 
 /// <summary>
@@ -305,10 +304,10 @@ private void ShowYesNo(string question, Action<bool> onAnswered)
             slider.targetGraphic = handle;
             slider.direction = Slider.Direction.LeftToRight;
             slider.minValue = 0f;
-            slider.maxValue = 100f;
+            slider.maxValue = 10f;
             slider.wholeNumbers = true;
             // Starts in the middle so neither end is suggested as the expected answer.
-            slider.value = 50f;
+            slider.value = 5f;
 
             var labels = new GameObject("ScaleLabels", typeof(RectTransform), typeof(LayoutElement));
             labels.transform.SetParent(_buttonArea, false);

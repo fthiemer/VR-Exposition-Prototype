@@ -31,6 +31,7 @@ namespace Exposure.UI
             if (session == null) return;
             session.OnStateChanged += HandleState;
             session.OnStepChanged += HandleStep;
+            session.OnTaskVariantChanged += HandleVariant;
             session.OnCoachMessage += HandleCoachMessage;
         }
 
@@ -39,13 +40,18 @@ namespace Exposure.UI
             if (session == null) return;
             session.OnStateChanged -= HandleState;
             session.OnStepChanged -= HandleStep;
+            session.OnTaskVariantChanged -= HandleVariant;
             session.OnCoachMessage -= HandleCoachMessage;
         }
 
 private void HandleStep(int index, ExposureStepDefinition<HeightState> step)
         {
             _pendingLevelTitle = step != null ? step.title : $"Level {index + 1}";
-            _pendingInstruction = step != null ? step.instruction : "";
+        }
+
+        private void HandleVariant(TaskVariant<HeightState> variant)
+        {
+            _pendingInstruction = variant != null ? variant.instruction : "";
         }
 
 private void HandleState(SessionState state)
@@ -92,44 +98,30 @@ private void HandleState(SessionState state)
         }
 
         /// <summary>
-        /// Summary framed around what was predicted versus what happened, since that
-        /// difference -- not the height reached -- is what the session was about.
+        /// Summary framed around the expectancy change (E1 vs. E2), since Pittig et al. (2023)
+        /// found that -- not whether the feared outcome occurred -- is what predicts outcome.
         ///
-        /// Public so it can also be shown outside VR or exported for the therapist,
-        /// without having to replay the session.
+        /// Public so it can also be shown outside VR or exported for the therapist, without
+        /// having to replay the session.
         /// </summary>
 public string BuildSummary()
         {
-            var records = session.Experiments;
-            if (records == null || records.Count == 0)
-                return UIText.Get("summary_empty");
+            var rec = session.LastSessionOutcome;
+            if (rec == null) return UIText.Get("summary_empty");
 
             var sb = new StringBuilder();
             sb.Append(UIText.Get("summary_title")).Append("\n\n");
 
-            int disconfirmed = 0;
-            int convictionDrop = 0;
-            int counted = 0;
-
-            foreach (var r in records)
+            if (rec.Value.expectancyBefore >= 0 && rec.Value.expectancyAfter >= 0)
             {
-                if (!r.occurred) disconfirmed++;
-                if (r.convictionBefore >= 0 && r.convictionAfter >= 0)
-                {
-                    convictionDrop += r.convictionBefore - r.convictionAfter;
-                    counted++;
-                }
+                int change = rec.Value.ExpectancyChange;
+                sb.Append(change > 0
+                    ? UIText.Get("summary_expectancy_drop", change)
+                    : UIText.Get("summary_expectancy_same"));
             }
-
-            sb.Append(UIText.Get("summary_levels", records.Count)).Append('\n');
-            sb.Append(UIText.Get("summary_disconfirmed", disconfirmed, records.Count)).Append('\n');
-
-            if (counted > 0)
+            else
             {
-                int avg = Mathf.RoundToInt((float)convictionDrop / counted);
-                sb.Append(avg > 0
-                    ? UIText.Get("summary_conviction_drop", avg)
-                    : UIText.Get("summary_conviction_same"));
+                sb.Append(UIText.Get("summary_done_no_rating"));
             }
 
             return sb.ToString();

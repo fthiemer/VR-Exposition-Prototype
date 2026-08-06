@@ -3,23 +3,22 @@ namespace Exposure
     /// <summary>
     /// Records the course of a session for later review with the therapist.
     ///
-    /// Two things are logged side by side: the behavioural experiment (predicted outcome,
-    /// conviction before/after, what actually happened) and the anxiety course. The former
-    /// drives progression, the latter stays clinically informative -- see README.
+    /// The expectancy triple (E1/O/E2, Pittig et al. 2023) is logged once per session, not per
+    /// task -- see 11_Spezifikation_Erwartungspruefung.md. Per-task telemetry (distance to the
+    /// edge) stays attached to the step-end row alongside it.
     /// </summary>
     public interface ISessionLogger
     {
         void BeginSession(string scenarioName);
         void LogStepStart(int index, string stepId, float heartRate);
+        void LogStepEnd(int index, string stepId, float minDistanceToEdge, float heartRate);
 
-        /// <summary>Prediction stated before the task.</summary>
-        void LogPrediction(int index, string stepId, string outcomeId, int convictionPercent, float heartRate);
+        /// <summary>Expectancy stated once at session start, on the ground (E1).</summary>
+        void LogExpectancyBefore(string outcomeId, int expectancy0to10, float heartRate);
 
-        /// <summary>Review after the task: did it happen, re-rated conviction, anxiety, behaviour.</summary>
-        void LogOutcome(int index, string stepId, string outcomeId, bool occurred,
-                        int convictionPercent, int anxiety0to100, float minDistanceToEdge, float heartRate);
+        /// <summary>Occurrence and re-rated expectancy, once at session end, on the ground (O, E2).</summary>
+        void LogOutcome(string outcomeId, int expectancyBefore, int occurred0to10, int expectancyAfter, float heartRate);
 
-        void LogStepEnd(int index, string stepId, float heartRate);
         void LogAbort(string reason, float heartRate);
         void EndSession();
     }
