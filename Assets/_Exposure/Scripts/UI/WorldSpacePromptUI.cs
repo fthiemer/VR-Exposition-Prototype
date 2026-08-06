@@ -35,15 +35,8 @@ namespace Exposure.UI
                  "before giving up and leaving it where it is.")]
         [SerializeField, Min(0f)] private float settleTimeoutSeconds = 10f;
 
-        [Tooltip("How far the panel may drift from its ideal spot before it follows. Below this " +
-                 "it stays put, so small head movement does not make it swim.")]
-        [SerializeField, Min(0f)] private float followDeadZoneMeters = 0.22f;
-
-        [Tooltip("Same idea for looking away: the panel only re-centres past this angle.")]
-        [SerializeField, Min(0f)] private float followDeadZoneDegrees = 22f;
-
-        [Tooltip("Higher glides back faster. Deliberately smooth -- a panel that snaps is worse " +
-                 "to read than one slightly off.")]
+        [Tooltip("How fast the panel matches head height. Height is the only thing it tracks -- " +
+                 "following horizontally would make it retreat from a finger reaching for it.")]
         [SerializeField, Min(0.1f)] private float followSmoothing = 3.5f;
 
         [Tooltip("Buttons ignore presses for this long after a panel appears, so a poke meant " +
@@ -69,7 +62,6 @@ namespace Exposure.UI
         private Coroutine _settleRoutine;
         private bool _placedFromValidPose;
         private bool _visible;
-        private bool _following;
         private float _inputBlockedUntil;
 
         private Transform Head
@@ -388,7 +380,6 @@ private void ShowYesNo(string question, Action<bool> onAnswered)
 private void Show()
         {
             _placedFromValidPose = false;
-            _following = false;
             PlaceInFrontOfHead();
             _canvas.gameObject.SetActive(true);
             _visible = true;
@@ -410,7 +401,6 @@ private void Hide()
         {
             ClearButtons();
             _visible = false;
-            _following = false;
             if (_canvas != null) _canvas.gameObject.SetActive(false);
             if (_settleRoutine != null)
             {
@@ -428,26 +418,26 @@ private void Hide()
         /// it is attached to your face. The dead zone is the compromise: it holds still while you
         /// are roughly where you were, and glides back once you have actually moved away.
         /// </summary>
+/// <summary>
+        /// The panel holds the position and rotation it was given, and only tracks head
+        /// *height*.
+        ///
+        /// It must not follow the head horizontally: poking at it pushes the head forward
+        /// slightly, and a panel that reacts to that retreats from the finger -- it flees
+        /// exactly when someone is trying to press it. Height is safe because standing taller
+        /// or crouching never happens as a side effect of reaching.
+        /// </summary>
         private void Update()
         {
             if (!_visible || _canvas == null || Head == null) return;
+            if (!HasPlausibleHeadPose()) return;
 
-            ComputeTargetPose(out var targetPos, out var targetRot);
+            float targetY = Head.position.y + verticalOffset;
+            var p = _canvas.transform.position;
+            if (Mathf.Abs(p.y - targetY) < 0.02f) return;
 
-            float posError = Vector3.Distance(_canvas.transform.position, targetPos);
-            float angError = Quaternion.Angle(_canvas.transform.rotation, targetRot);
-
-            if (!_following && (posError > followDeadZoneMeters || angError > followDeadZoneDegrees))
-                _following = true;
-
-            if (!_following) return;
-
-            float k = 1f - Mathf.Exp(-followSmoothing * Time.deltaTime);
-            _canvas.transform.position = Vector3.Lerp(_canvas.transform.position, targetPos, k);
-            _canvas.transform.rotation = Quaternion.Slerp(_canvas.transform.rotation, targetRot, k);
-
-            // Settle again once it has caught up, so it stops chasing sub-centimetre wobble.
-            if (posError < 0.02f && angError < 1.5f) _following = false;
+            p.y = Mathf.Lerp(p.y, targetY, 1f - Mathf.Exp(-followSmoothing * Time.deltaTime));
+            _canvas.transform.position = p;
         }
 
         /// <summary>Where the panel would ideally sit for the current head pose.</summary>
