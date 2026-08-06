@@ -138,6 +138,10 @@ private void Update()
         /// The instantaneous geometric condition for the current task. Completion additionally
         /// requires holding this for <c>holdSecondsRequired</c>, handled in Update().
         /// </summary>
+/// <summary>
+        /// The instantaneous geometric condition for the current task. Completion additionally
+        /// requires holding this for <c>holdSecondsRequired</c>, handled in Update().
+        /// </summary>
         private bool IsConditionMet(bool atEdge, bool lookingDown)
         {
             switch (_task)
@@ -149,7 +153,11 @@ private void Update()
                     return atEdge && lookingDown;
 
                 case TaskType.CrossPlank:
-                    return IsBeyondEdge();
+                    // The plank's far end *is* the edge line, so standing out at that end is
+                    // what "crossed" means here. The previous test required being past the edge
+                    // marker, which no reachable point on the walkable geometry satisfies --
+                    // the task could never complete.
+                    return atEdge;
 
                 default: // Stand
                     return true;
@@ -183,15 +191,6 @@ private void CheckAvoidance(bool atEdge)
             a.y = 0f;
             b.y = 0f;
             return Vector3.Distance(a, b);
-        }
-
-        /// <summary>True when the head has passed the edge line along the edge's forward axis.</summary>
-        private bool IsBeyondEdge()
-        {
-            if (edge == null) return false;
-            Vector3 toHead = Head.position - edge.position;
-            toHead.y = 0f;
-            return Vector3.Dot(toHead, edge.forward) > 0.3f;
         }
 
         private bool LookingDown()
