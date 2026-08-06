@@ -112,10 +112,21 @@ und die passenden Definitionstypen.
 Das Projekt läuft **ohne kommerzielle Assets** — die Szene nutzt einen Blockout aus
 Primitiven. Visuelle Ausgestaltung ist eine austauschbare Schicht darüber.
 
-Kommerzielle Packs (City Builder Urban, POLYBOX Hazelwood Loft) liegen lokal unter
-`Assets/3rd Party Assets/` und sind bewusst **nicht** im Repository: die Unity-Asset-Store-
-EULA untersagt die Weiterverbreitung in extrahierbarer Form, und sie überschreiten die
-GitHub-Limits deutlich.
+### Verwendete Assets (3rd-Party)
+
+| Paket | Verwendung | Quelle / Lizenz |
+|---|---|---|
+| POLYBOX „Hazelwood Loft" (City & Terraces) | Ferne Stadt-Kulisse in der polierten Fassung | Unity Asset Store, kommerzielle EULA |
+| City Builder Urban | Ergänzende Stadtgeometrie | Unity Asset Store, kommerzielle EULA |
+| Materialien unter `Mats/` (Projekt-Root) | Marmor/Stoff/Metall/Holz für die polierte Fassung | Sammlung, Lizenz siehe jeweilige Quelle |
+
+Diese Pakete liegen lokal unter `Assets/3rd Party Assets/` und sind bewusst **nicht** im
+Repository: die Unity-Asset-Store-EULA untersagt die Weiterverbreitung in extrahierbarer
+Form, und sie überschreiten die GitHub-Limits deutlich. `Assets/3rd Party Assets/` ist in
+`.gitignore` eingetragen. Wer das Repository klont, bekommt das Blockout vollständig
+lauffähig; für die polierte Fassung müssen die oben gelisteten Pakete manuell über den
+Unity Asset Store (Package Manager → My Assets) unter eigener Lizenz nachimportiert werden
+— sie sind keine UPM-Pakete und daher nicht über `Packages/manifest.json` referenziert.
 
 ## Wissenschaftliche Grundlage
 
