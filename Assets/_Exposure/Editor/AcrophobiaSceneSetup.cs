@@ -18,6 +18,10 @@ namespace Exposure.EditorTools
     {
         private const string ScenarioPath = "Assets/_Exposure/Scenarios/Acrophobia/Scenario_Acrophobia.asset";
         private const string CatalogPath  = "Assets/_Exposure/Scenarios/Acrophobia/FearedOutcomes_Acrophobia.asset";
+        private const string XriAudioFolder =
+            "Assets/Samples/XR Interaction Toolkit/3.4.1/Hands Interaction Demo/DemoAssets/Audio";
+        private const string XriHoverClip = XriAudioFolder + "/ButtonHover.wav";
+        private const string XriClickClip = XriAudioFolder + "/ButtonClick.wav";
         private const string ConfettiPath = "Assets/Samples/XR Interaction Toolkit/3.4.1/Starter Assets/" +
                                             "DemoAssets/Prefabs/Interactables/Confetti.prefab";
 
@@ -125,15 +129,27 @@ namespace Exposure.EditorTools
                 marker = go.transform;
             }
 
+            // A glowing, mostly transparent marker. Primitives ship with an opaque material, so
+            // tinting alpha through a property block would have had no visible effect at all.
+            var markerRenderer = marker.GetComponent<Renderer>();
+            if (markerRenderer != null) markerRenderer.sharedMaterial = GlowMaterial("Cue_TargetMarker");
+
             var markerFeedback = feedbackRoot.GetComponent<TargetMarkerFeedback>()
                                  ?? Undo.AddComponent<TargetMarkerFeedback>(feedbackRoot.gameObject);
             var markerSo = new SerializedObject(markerFeedback);
             markerSo.FindProperty("marker").objectReferenceValue = marker.gameObject;
-            markerSo.FindProperty("markerRenderer").objectReferenceValue = marker.GetComponent<Renderer>();
+            markerSo.FindProperty("markerRenderer").objectReferenceValue = markerRenderer;
             markerSo.ApplyModifiedProperties();
 
             var audioFeedback = feedbackRoot.GetComponent<AudioTaskFeedback>()
                                 ?? Undo.AddComponent<AudioTaskFeedback>(feedbackRoot.gameObject);
+
+            // Stand-in clips from the XRI samples, so something is audible before real sound
+            // design exists. The hum has no equivalent there and stays procedural.
+            var audioSo = new SerializedObject(audioFeedback);
+            AssignClipIfEmpty(audioSo, "taskStartClip", XriHoverClip);
+            AssignClipIfEmpty(audioSo, "completedClip", XriClickClip);
+            audioSo.ApplyModifiedProperties();
 
             var particleFeedback = feedbackRoot.GetComponent<ParticleBurstFeedback>()
                                    ?? Undo.AddComponent<ParticleBurstFeedback>(feedbackRoot.gameObject);
@@ -233,6 +249,69 @@ namespace Exposure.EditorTools
             list.InsertArrayElementAtIndex(list.arraySize);
             list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = value;
         }
+
+/// <summary>
+        /// Fills a clip field only if it is still empty, so a real clip assigned by hand is
+        /// never overwritten by re-running the setup.
+        /// </summary>
+        private static void AssignClipIfEmpty(SerializedObject so, string property, string assetPath)
+        {
+            var prop = so.FindProperty(property);
+            if (prop == null || prop.objectReferenceValue != null) return;
+
+            var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(assetPath);
+            if (clip == null)
+            {
+                Debug.LogWarning($"[Exposure] Audio clip not found at {assetPath} -- " +
+                                 $"{property} stays empty and falls back to a generated tone.");
+                return;
+            }
+            prop.objectReferenceValue = clip;
+        }
+
+        /// <summary>
+        /// Transparent, emissive material for the target marker. Both properties matter: without
+        /// transparency the marker hides the floor it is meant to point at, and without emission
+        /// it disappears against a bright sky.
+        /// </summary>
+/// <summary>
+        /// Transparent unlit material for the target marker.
+        ///
+        /// Unlit rather than Lit-with-emission on purpose. Emission looked like the obvious
+        /// route, but URP recomputes material keywords on import and kept switching _EMISSION
+        /// back off, leaving the marker dull. Unlit sidesteps that entirely: it always renders
+        /// at full colour regardless of lighting, which is exactly the "glowing" read a marker
+        /// wants -- and it stays legible against both a bright sky and a dark floor, which a lit
+        /// surface does not. It is also cheaper, which matters on a Quest 2.
+        /// </summary>
+        private static Material GlowMaterial(string name)
+        {
+            const string folder = "Assets/_Exposure/Materials";
+            System.IO.Directory.CreateDirectory(folder);
+            string path = $"{folder}/{name}.mat";
+
+            var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (existing != null) return existing;
+
+            var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
+            var mat = new Material(shader) { name = name };
+
+            var tint = new Color(0.25f, 0.7f, 1f, 0.18f);
+            mat.color = tint;
+            mat.SetColor("_BaseColor", tint);
+
+            mat.SetFloat("_Surface", 1f); // transparent
+            mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            mat.SetFloat("_ZWrite", 0f);
+            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            mat.SetShaderPassEnabled("ShadowCaster", false);
+
+            AssetDatabase.CreateAsset(mat, path);
+            return mat;
+        }
+
     }
 }
 #endif

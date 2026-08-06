@@ -20,8 +20,12 @@ namespace Exposure
         [SerializeField] private Renderer markerRenderer;
 
         [Header("Colours")]
-        [SerializeField] private Color idleColor = new Color(0.25f, 0.7f, 1f, 0.35f);
-        [SerializeField] private Color heldColor = new Color(0.35f, 1f, 0.5f, 0.6f);
+        [SerializeField] private Color idleColor = new Color(0.25f, 0.7f, 1f, 0.18f);
+        [SerializeField] private Color heldColor = new Color(0.35f, 1f, 0.55f, 0.32f);
+
+        [Tooltip("Emission multiplier. The marker has to stay readable against a bright sky and " +
+                 "a dark floor alike, which base colour alone does not manage.")]
+        [SerializeField, Min(0f)] private float glowStrength = 2.2f;
 
         [Header("Motion")]
         [Tooltip("Pulses per second while waiting to be stood on. Some movement reads as 'go here' " +
@@ -33,6 +37,7 @@ namespace Exposure
 
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int ColorId = Shader.PropertyToID("_Color");
+        private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
 
         private MaterialPropertyBlock _block;
         private Vector3 _baseScale;
@@ -83,7 +88,7 @@ namespace Exposure
             marker.SetActive(visible);
         }
 
-        private void Tint(Color color)
+private void Tint(Color color)
         {
             if (markerRenderer == null) return;
 
@@ -92,6 +97,11 @@ namespace Exposure
             markerRenderer.GetPropertyBlock(_block);
             _block.SetColor(BaseColorId, color); // URP
             _block.SetColor(ColorId, color);     // built-in / fallback
+
+            // Emission carries the marker, not the base colour: at low alpha the surface is
+            // barely there, so what the eye picks up is the glow. Scaled by alpha, so fading
+            // the marker also dims it instead of leaving a bright ghost behind.
+            _block.SetColor(EmissionColorId, color * (glowStrength * color.a));
             markerRenderer.SetPropertyBlock(_block);
         }
     }
