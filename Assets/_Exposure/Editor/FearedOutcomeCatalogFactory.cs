@@ -20,12 +20,23 @@ public static void CreateCatalog()
             Directory.CreateDirectory(Folder);
 
             var catalog = ScriptableObject.CreateInstance<FearedOutcomeCatalog>();
-            catalog.sourceInstrument = "PLATZHALTER - durch validierte Items ersetzen (ACQ-Gedankenskala / HIQ)";
-            catalog.outcomes.Add(new FearedOutcome { id = "balance", text = "Ich werde das Gleichgewicht verlieren und stürzen." });
-            catalog.outcomes.Add(new FearedOutcome { id = "dizzy",   text = "Mir wird so schwindelig, dass ich mich nicht mehr halten kann." });
-            catalog.outcomes.Add(new FearedOutcome { id = "support", text = "Das Geländer oder der Boden hält nicht." });
-            catalog.outcomes.Add(new FearedOutcome { id = "control", text = "Ich verliere die Kontrolle über mich selbst." });
-            catalog.outcomes.Add(new FearedOutcome { id = "panic",   text = "Ich bekomme Panik und komme nicht mehr weg." });
+            catalog.sourceInstrument =
+                "Angelehnt an das Heights Interpretation Questionnaire (HIQ), " +
+                "Steinman & Teachman 2011, J Anxiety Disord 25:896-902. " +
+                "Sinngemäss umformuliert, NICHT die Originalitems und keine validierte Übersetzung.";
+
+            // The eight HIQ interpretations, reworded rather than translated. Two reasons: the
+            // instrument is copyrighted and this repository is public, and the original items are
+            // written for a paper questionnaire ("You will fall") rather than for a coach speaking
+            // to someone standing on a ledge.
+            catalog.outcomes.Add(new FearedOutcome { id = "fall",      text = "Ich werde herunterfallen." });
+            catalog.outcomes.Add(new FearedOutcome { id = "injury",    text = "Ich werde mich verletzen." });
+            catalog.outcomes.Add(new FearedOutcome { id = "unsafe",    text = "Hier oben zu sein ist gefährlich." });
+            catalog.outcomes.Add(new FearedOutcome { id = "panic",     text = "Ich gerate in Panik und verliere die Kontrolle." });
+            catalog.outcomes.Add(new FearedOutcome { id = "endure",    text = "Ich werde die Angst nicht aushalten." });
+            catalog.outcomes.Add(new FearedOutcome { id = "faint",     text = "Mir wird schwarz vor Augen." });
+            catalog.outcomes.Add(new FearedOutcome { id = "freeze",    text = "Ich erstarre und komme nicht mehr weg." });
+            catalog.outcomes.Add(new FearedOutcome { id = "dizzy",     text = "Mir wird so schwindelig, dass ich mich nicht halten kann." });
 
             AssetDatabase.CreateAsset(catalog, $"{Folder}/FearedOutcomes_Acrophobia.asset");
             AssetDatabase.SaveAssets();
@@ -33,7 +44,7 @@ public static void CreateCatalog()
 
             Selection.activeObject = catalog;
             EditorGUIUtility.PingObject(catalog);
-            Debug.Log("[Exposure] Placeholder feared-outcome catalog generated under " + Folder);
+            Debug.Log("[Exposure] Feared-outcome catalog generated (HIQ-based) under " + Folder);
         }
     }
 }

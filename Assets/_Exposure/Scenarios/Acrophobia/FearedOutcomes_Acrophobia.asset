@@ -12,16 +12,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df556b6bffb94ef47afd7c9c0b8f5e44, type: 3}
   m_Name: FearedOutcomes_Acrophobia
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.FearedOutcomeCatalog
-  sourceInstrument: PLATZHALTER - durch validierte Items ersetzen (ACQ-Gedankenskala
-    / HIQ)
+  sourceInstrument: "Angelehnt an das Heights Interpretation Questionnaire (HIQ),
+    Steinman & Teachman 2011, J Anxiety Disord 25:896-902. Sinngem\xE4ss umformuliert,
+    NICHT die Originalitems und keine validierte \xDCbersetzung."
   outcomes:
-  - id: balance
-    text: "Ich werde das Gleichgewicht verlieren und st\xFCrzen."
-  - id: dizzy
-    text: Mir wird so schwindelig, dass ich mich nicht mehr halten kann.
-  - id: support
-    text: "Das Gel\xE4nder oder der Boden h\xE4lt nicht."
-  - id: control
-    text: "Ich verliere die Kontrolle \xFCber mich selbst."
+  - id: fall
+    text: Ich werde herunterfallen.
+  - id: injury
+    text: Ich werde mich verletzen.
+  - id: unsafe
+    text: "Hier oben zu sein ist gef\xE4hrlich."
   - id: panic
-    text: Ich bekomme Panik und komme nicht mehr weg.
+    text: Ich gerate in Panik und verliere die Kontrolle.
+  - id: endure
+    text: Ich werde die Angst nicht aushalten.
+  - id: faint
+    text: Mir wird schwarz vor Augen.
+  - id: freeze
+    text: Ich erstarre und komme nicht mehr weg.
+  - id: dizzy
+    text: Mir wird so schwindelig, dass ich mich nicht halten kann.
