@@ -62,8 +62,56 @@ namespace Exposure.EditorTools
             {
                 tracker = Undo.AddComponent<HeightTaskTracker>(envRoot);
             }
+            // --- task feedback: target marker, sound, particle burst ---
+            var feedbackRoot = envRoot.transform.Find("TaskFeedback");
+            if (feedbackRoot == null)
+            {
+                var go = new GameObject("TaskFeedback");
+                Undo.RegisterCreatedObjectUndo(go, "Create TaskFeedback");
+                go.transform.SetParent(envRoot.transform, false);
+                feedbackRoot = go.transform;
+            }
+
+            var marker = feedbackRoot.Find("TargetMarker");
+            if (marker == null)
+            {
+                var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                go.name = "TargetMarker";
+                Undo.RegisterCreatedObjectUndo(go, "Create TargetMarker");
+                go.transform.SetParent(feedbackRoot, false);
+                // Flat on the floor at the edge, just above it so it does not z-fight.
+                go.transform.localPosition = new Vector3(0f, 0.01f, 2.5f);
+                go.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                go.transform.localScale = new Vector3(0.8f, 0.8f, 1f);
+                Object.DestroyImmediate(go.GetComponent<Collider>()); // must not block the participant
+                marker = go.transform;
+            }
+
+            var markerFeedback = feedbackRoot.GetComponent<TargetMarkerFeedback>()
+                                 ?? Undo.AddComponent<TargetMarkerFeedback>(feedbackRoot.gameObject);
+            var markerSo = new SerializedObject(markerFeedback);
+            markerSo.FindProperty("marker").objectReferenceValue = marker.gameObject;
+            markerSo.FindProperty("markerRenderer").objectReferenceValue = marker.GetComponent<Renderer>();
+            markerSo.ApplyModifiedProperties();
+
+            var audioFeedback = feedbackRoot.GetComponent<AudioTaskFeedback>()
+                                ?? Undo.AddComponent<AudioTaskFeedback>(feedbackRoot.gameObject);
+
+            var particleFeedback = feedbackRoot.GetComponent<ParticleBurstFeedback>()
+                                   ?? Undo.AddComponent<ParticleBurstFeedback>(feedbackRoot.gameObject);
+            var particleSo = new SerializedObject(particleFeedback);
+            particleSo.FindProperty("playAt").objectReferenceValue = marker;
+            particleSo.ApplyModifiedProperties();
+
             var trackerSo = new SerializedObject(tracker);
             trackerSo.FindProperty("edge").objectReferenceValue = edge;
+
+            var list = trackerSo.FindProperty("feedbackBehaviours");
+            list.ClearArray();
+            AppendTo(list, markerFeedback);
+            AppendTo(list, audioFeedback);
+            AppendTo(list, particleFeedback);
+
             trackerSo.ApplyModifiedProperties();
 
             // --- prompt UI ---
@@ -111,7 +159,14 @@ namespace Exposure.EditorTools
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             EditorSceneManager.SaveOpenScenes();
 
-            Debug.Log("[Exposure] Acrophobia scene wired: session, prompt UI, task tracker and edge marker are connected.");
+            Debug.Log("[Exposure] Acrophobia scene wired: session, prompt UI, task tracker, " +
+                      "edge marker and task feedback are connected.");
+        }
+
+        private static void AppendTo(SerializedProperty list, Object value)
+        {
+            list.InsertArrayElementAtIndex(list.arraySize);
+            list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = value;
         }
     }
 }
