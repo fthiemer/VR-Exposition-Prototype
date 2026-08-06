@@ -131,22 +131,22 @@ namespace Exposure
             }
         }
 
-        private void CheckAvoidance(bool atEdge)
+private void CheckAvoidance(bool atEdge)
         {
             if (_elapsed < avoidanceAfterSeconds) return;
             if (Time.time - _lastCueTime < avoidanceCooldownSeconds) return;
 
-            string cue = null;
+            string cueKey = null;
             if (_task == TaskType.ApproachEdge && !atEdge)
-                cue = "Take your time -- see if you can get a step closer to the edge.";
+                cueKey = "avoidance_approach_edge";
             else if (_task == TaskType.LookDown && atEdge && SecondsLookingDown < 0.5f)
-                cue = "Try to keep looking down rather than away.";
+                cueKey = "avoidance_look_down_away";
             else if (_task == TaskType.LookDown && !atEdge)
-                cue = "Move up to the edge first, then look down.";
+                cueKey = "avoidance_look_down_not_at_edge";
 
-            if (cue == null) return;
+            if (cueKey == null) return;
             _lastCueTime = Time.time;
-            OnAvoidanceDetected?.Invoke(cue);
+            OnAvoidanceDetected?.Invoke(UIText.Get(cueKey));
         }
 
         /// <summary>Horizontal distance from head to the edge transform, ignoring height.</summary>

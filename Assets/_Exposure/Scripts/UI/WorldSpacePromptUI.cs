@@ -62,7 +62,7 @@ namespace Exposure.UI
 
         // ---------------------------------------------------------------- IPredictionPrompt
 
-        public void AskPrediction(FearedOutcomeCatalog catalog, Action<Prediction> onAnswered)
+public void AskPrediction(FearedOutcomeCatalog catalog, Action<Prediction> onAnswered)
         {
             if (catalog == null || catalog.outcomes.Count == 0)
             {
@@ -71,20 +71,20 @@ namespace Exposure.UI
             }
 
             ShowOutcomeChoice(catalog, chosenId =>
-                ShowRating("How convinced are you that this will happen?", percent =>
+                ShowRating(UIText.Get("conviction_before_question"), percent =>
                 {
                     Hide();
                     onAnswered?.Invoke(new Prediction { outcomeId = chosenId, convictionPercent = percent });
                 }));
         }
 
-        public void AskOutcome(FearedOutcomeCatalog catalog, Prediction prediction, Action<OutcomeReport> onAnswered)
+public void AskOutcome(FearedOutcomeCatalog catalog, Prediction prediction, Action<OutcomeReport> onAnswered)
         {
             string predictedText = TextForOutcome(catalog, prediction.outcomeId);
 
-            ShowYesNo($"You expected: \"{predictedText}\"\n\nDid it happen?", occurred =>
-                ShowRating("How convinced are you now that it would happen?", convictionAfter =>
-                    ShowRating("How anxious did you feel during that?", anxiety =>
+            ShowYesNo(UIText.Get("outcome_question", predictedText), occurred =>
+                ShowRating(UIText.Get("conviction_after_question"), convictionAfter =>
+                    ShowRating(UIText.Get("anxiety_question"), anxiety =>
                     {
                         Hide();
                         onAnswered?.Invoke(new OutcomeReport
@@ -113,10 +113,10 @@ namespace Exposure.UI
 
         // ---------------------------------------------------------------- panel states
 
-        private void ShowOutcomeChoice(FearedOutcomeCatalog catalog, Action<string> onChosen)
+private void ShowOutcomeChoice(FearedOutcomeCatalog catalog, Action<string> onChosen)
         {
             Show();
-            _title.text = "What do you expect will happen up here?";
+            _title.text = UIText.Get("predict_question");
             ClearButtons();
             foreach (var outcome in catalog.outcomes)
             {
@@ -125,13 +125,13 @@ namespace Exposure.UI
             }
         }
 
-        private void ShowYesNo(string question, Action<bool> onAnswered)
+private void ShowYesNo(string question, Action<bool> onAnswered)
         {
             Show();
             _title.text = question;
             ClearButtons();
-            AddButton("Yes, it happened", () => onAnswered?.Invoke(true));
-            AddButton("No, it did not", () => onAnswered?.Invoke(false));
+            AddButton(UIText.Get("outcome_yes"), () => onAnswered?.Invoke(true));
+            AddButton(UIText.Get("outcome_no"), () => onAnswered?.Invoke(false));
         }
 
         private void ShowRating(string question, Action<int> onAnswered)

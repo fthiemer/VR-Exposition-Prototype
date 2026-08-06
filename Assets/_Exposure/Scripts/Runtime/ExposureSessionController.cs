@@ -249,7 +249,7 @@ namespace Exposure
 
                 if (!disconfirmed)
                 {
-                    OnCoachMessage?.Invoke("Let's stay at this level and try once more.");
+                    OnCoachMessage?.Invoke(UIText.Get("repeat_level_coach"));
                     i--; // repeat the same level
                 }
             }

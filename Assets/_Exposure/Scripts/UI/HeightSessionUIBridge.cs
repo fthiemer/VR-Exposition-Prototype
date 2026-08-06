@@ -53,8 +53,8 @@ private void HandleState(SessionState state)
             switch (state)
             {
                 case SessionState.AwaitingReady:
-                    ui.ShowConfirm($"Next: {_pendingLevelTitle}\n\nReady to go up?",
-                                   "I'm ready",
+                    ui.ShowConfirm(UIText.Get("ready_screen", _pendingLevelTitle),
+                                   UIText.Get("ready_confirm"),
                                    () => session.ConfirmReady());
                     break;
 
@@ -63,16 +63,15 @@ private void HandleState(SessionState state)
                     // just tells the participant what to physically do (feedback item 7 --
                     // "the task itself is never made clear").
                     if (!string.IsNullOrWhiteSpace(_pendingInstruction))
-                        ui.ShowConfirm(_pendingInstruction, "Got it", () => { });
+                        ui.ShowConfirm(_pendingInstruction, UIText.Get("task_dismiss"), () => { });
                     break;
 
                 case SessionState.Completed:
-                    ui.ShowMessage(BuildSummary(), "Done", () => { });
+                    ui.ShowMessage(BuildSummary(), UIText.Get("summary_done"), () => { });
                     break;
 
                 case SessionState.Aborted:
-                    ui.ShowMessage("We stopped here. That was the right call, not a setback.",
-                                   "Close", () => { });
+                    ui.ShowMessage(UIText.Get("aborted_message"), UIText.Get("aborted_close"), () => { });
                     break;
             }
         }
@@ -91,14 +90,14 @@ private void HandleState(SessionState state)
         /// Public so it can also be shown outside VR or exported for the therapist,
         /// without having to replay the session.
         /// </summary>
-        public string BuildSummary()
+public string BuildSummary()
         {
             var records = session.Experiments;
             if (records == null || records.Count == 0)
-                return "Session finished.";
+                return UIText.Get("summary_empty");
 
             var sb = new StringBuilder();
-            sb.Append("What you tested today\n\n");
+            sb.Append(UIText.Get("summary_title")).Append("\n\n");
 
             int disconfirmed = 0;
             int convictionDrop = 0;
@@ -114,15 +113,15 @@ private void HandleState(SessionState state)
                 }
             }
 
-            sb.Append($"Levels worked through: {records.Count}\n");
-            sb.Append($"Fears that did not come true: {disconfirmed} of {records.Count}\n");
+            sb.Append(UIText.Get("summary_levels", records.Count)).Append('\n');
+            sb.Append(UIText.Get("summary_disconfirmed", disconfirmed, records.Count)).Append('\n');
 
             if (counted > 0)
             {
                 int avg = Mathf.RoundToInt((float)convictionDrop / counted);
                 sb.Append(avg > 0
-                    ? $"On average you were {avg} % less convinced afterwards."
-                    : "Your conviction stayed about the same -- worth talking through.");
+                    ? UIText.Get("summary_conviction_drop", avg)
+                    : UIText.Get("summary_conviction_same"));
             }
 
             return sb.ToString();
