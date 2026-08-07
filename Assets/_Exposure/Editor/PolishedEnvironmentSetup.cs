@@ -27,6 +27,21 @@ namespace Exposure.EditorTools
             "Assets/3rd Party Assets/POLYBOX/hazelwoodloft/CITY_DATA_NEW/new_prefabs/" +
             "prefabs_day_buildings_skyscrapers";
         private const string BirdsPath = "Assets/3rd Party Assets/POLYBOX/hazelwoodloft/Animation";
+        private const string MatsPath  = "Assets/3rd Party Assets/Mats";
+
+        /// <summary>
+        /// Texture budget per surface. 2K only where the participant stands right against the
+        /// surface and can see it at arm's length; everything further away gets 1K, where the
+        /// difference is invisible but the memory is not. Both are ASTC on Android.
+        /// </summary>
+        private const int NearTextureSize = 2048;
+
+        private const string MaterialPrefKeyPrefix = "Exposure.BlockoutMaterial.";
+        private const string BuiltInMaterialSentinel = "<builtin>";
+
+        /// <summary>Surfaces the polish pass retextures, and therefore has to be able to put back.</summary>
+        private static readonly string[] TexturedSurfaceNames =
+            { "Wall", "RailingSolid", "SurfaceSolid", "SurfaceGrating" };
 
         [MenuItem("Exposure/Polish/Build City Backdrop")]
         public static void BuildBackdrop()
@@ -60,6 +75,7 @@ namespace Exposure.EditorTools
             BuildGroundPlane(root.transform);
             ScatterBuildings(root.transform, prefabs);
             ScatterBirds(root.transform);
+            ApplySurfaceTextures();
             ApplyDepthFog();
 
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
@@ -77,7 +93,39 @@ namespace Exposure.EditorTools
                 existing = GameObject.Find(BackdropName);
             }
 
+            RestoreBlockoutMaterials();
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        }
+
+        /// <summary>
+        /// Puts back the materials the textured surfaces replaced.
+        ///
+        /// Without this, clearing the backdrop leaves the polished stone and steel on the
+        /// platform, so the blockout build quietly ships looking polished -- the exact failure
+        /// the clear-before-commit rule exists to prevent, just moved one step down.
+        ///
+        /// The originals are remembered in EditorPrefs rather than a field: assembly reloads
+        /// wipe statics, and the gap between building and clearing is usually several reloads
+        /// wide.
+        /// </summary>
+        private static void RestoreBlockoutMaterials()
+        {
+            foreach (var name in TexturedSurfaceNames)
+            {
+                string key = MaterialPrefKeyPrefix + name;
+                if (!EditorPrefs.HasKey(key)) continue;
+
+                var go = GameObject.Find(name);
+                var renderer = go != null ? go.GetComponent<Renderer>() : null;
+                if (renderer != null)
+                {
+                    string stored = EditorPrefs.GetString(key);
+                    renderer.sharedMaterial = stored == BuiltInMaterialSentinel
+                        ? DefaultLitMaterial()
+                        : AssetDatabase.LoadAssetAtPath<Material>(stored) ?? DefaultLitMaterial();
+                }
+                EditorPrefs.DeleteKey(key);
+            }
         }
 
         private static List<GameObject> LoadBuildingPrefabs()
@@ -209,6 +257,139 @@ namespace Exposure.EditorTools
         }
 
         /// <summary>
+        /// Textures the two surfaces the participant is actually close to: the lift car and the
+        /// building wall right behind them.
+        ///
+        /// Only those two. Scale correctness and parallax carry the height far more than surface
+        /// detail does, so texturing distant scenery would cost Quest 2 memory for something the
+        /// eye cannot resolve — but a wall you are standing against reads as cardboard without a
+        /// surface, and cardboard breaks the presence the whole exposure depends on.
+        ///
+        /// Textures come from the gitignored Mats collection, so this lives in the polish path.
+        /// If they are missing the blockout materials simply stay as they are.
+        /// </summary>
+        private static void ApplySurfaceTextures()
+        {
+            if (!Directory.Exists(MatsPath))
+            {
+                Debug.Log($"[Exposure] No textures under {MatsPath} -- surfaces stay untextured. " +
+                          "The Mats collection is gitignored.");
+                return;
+            }
+
+            // The wall the participant stands against: brushed basalt reads as stone cladding,
+            // which is what a building of this kind would actually be faced with.
+            var facade = TexturedMaterial("Polish_Facade",
+                baseMap:   $"{MatsPath}/Bazalt/BAZALT - BRUSHED -  BAZALT-diffuse.jpg",
+                normalMap: $"{MatsPath}/Bazalt/BAZALT - BRUSHED -  BAZALT-normal.jpg",
+                size: NearTextureSize, tiling: new Vector2(4f, 12f), smoothness: 0.25f);
+
+            AssignTextured("Wall", facade);
+
+            // The lift car and railings: brushed steel.
+            var steel = TexturedMaterial("Polish_Steel",
+                baseMap:   $"{MatsPath}/SteelGrey/Steel Grey_old_Base Color.jpeg",
+                normalMap: $"{MatsPath}/SteelGrey/Steel Grey_old_Normal.jpeg",
+                size: NearTextureSize, tiling: new Vector2(2f, 2f), smoothness: 0.62f, metallic: 0.85f);
+
+            foreach (var name in new[] { "RailingSolid", "SurfaceSolid", "SurfaceGrating" })
+                AssignTextured(name, steel);
+
+            Debug.Log("[Exposure] Surface textures applied to the near wall and the platform metal. " +
+                      "Clear City Backdrop puts the blockout materials back.");
+        }
+
+        /// <summary>
+        /// Swaps in a polished material, noting what was there so the blockout can be restored.
+        /// </summary>
+        private static void AssignTextured(string objectName, Material polished)
+        {
+            if (polished == null) return;
+
+            var go = GameObject.Find(objectName);
+            var renderer = go != null ? go.GetComponent<Renderer>() : null;
+            if (renderer == null) return;
+
+            string key = MaterialPrefKeyPrefix + objectName;
+            if (!EditorPrefs.HasKey(key))
+            {
+                // Built-in materials (the default URP Lit these primitives ship with) have no
+                // asset path, so an empty string here is a real answer, not a failure -- it
+                // means "restore the default", and the restore side has to understand that.
+                string path = renderer.sharedMaterial != null
+                    ? AssetDatabase.GetAssetPath(renderer.sharedMaterial)
+                    : "";
+                EditorPrefs.SetString(key, string.IsNullOrEmpty(path) ? BuiltInMaterialSentinel : path);
+            }
+
+            renderer.sharedMaterial = polished;
+        }
+
+        /// <summary>
+        /// Builds a URP Lit material from a base and normal map, forcing the import size down to
+        /// the given budget so a 6000 px source cannot quietly ship at full resolution.
+        /// </summary>
+        private static Material TexturedMaterial(string name, string baseMap, string normalMap,
+                                                 int size, Vector2 tiling, float smoothness,
+                                                 float metallic = 0f)
+        {
+            var albedo = ImportTexture(baseMap, size, isNormalMap: false);
+            if (albedo == null)
+            {
+                Debug.LogWarning($"[Exposure] Texture not found: {baseMap} -- {name} skipped.");
+                return null;
+            }
+            var normal = ImportTexture(normalMap, size, isNormalMap: true);
+
+            const string folder = "Assets/_Exposure/Materials";
+            Directory.CreateDirectory(folder);
+            string path = $"{folder}/{name}.mat";
+
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null)
+            {
+                var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+                mat = new Material(shader) { name = name };
+                AssetDatabase.CreateAsset(mat, path);
+            }
+
+            mat.SetTexture("_BaseMap", albedo);
+            mat.SetTextureScale("_BaseMap", tiling);
+            if (normal != null)
+            {
+                mat.SetTexture("_BumpMap", normal);
+                mat.SetTextureScale("_BumpMap", tiling);
+                mat.EnableKeyword("_NORMALMAP");
+            }
+            mat.SetFloat("_Smoothness", smoothness);
+            mat.SetFloat("_Metallic", metallic);
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        private static Texture2D ImportTexture(string path, int maxSize, bool isNormalMap)
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return null;
+
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer != null)
+            {
+                bool changed = false;
+                if (importer.maxTextureSize != maxSize) { importer.maxTextureSize = maxSize; changed = true; }
+
+                var wanted = isNormalMap ? TextureImporterType.NormalMap : TextureImporterType.Default;
+                if (importer.textureType != wanted) { importer.textureType = wanted; changed = true; }
+
+                if (changed)
+                {
+                    importer.SaveAndReimport();
+                }
+            }
+
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        /// <summary>
         /// Depth fog does three jobs at once here: it sells scale, hides how little detail the
         /// far buildings carry, and lets the far clip plane come in closer, which is what keeps
         /// this affordable on a Quest 2. Tuned to still show the nearest ring of buildings
@@ -222,6 +403,11 @@ namespace Exposure.EditorTools
             RenderSettings.fogStartDistance = 45f;
             RenderSettings.fogEndDistance = 230f;
         }
+
+        /// <summary>The plain URP Lit material Unity primitives are created with.</summary>
+        private static Material DefaultLitMaterial()
+            => AssetDatabase.GetBuiltinExtraResource<Material>("Default-Material.mat")
+               ?? new Material(Shader.Find("Universal Render Pipeline/Lit"));
 
         private static Material MakeMaterial(string name, Color color)
         {

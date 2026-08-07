@@ -261,3 +261,8 @@ sysinfo.txt
 # project runs without them using the primitive blockout.
 /[Aa]ssets/3rd Party Assets/
 /[Aa]ssets/3rd Party Assets.meta
+
+# Polish-pass materials: generated on demand and pointing at the gitignored Mats
+# collection, so committing them would only hand a cloner broken texture references.
+/[Aa]ssets/_Exposure/Materials/Polish_*.mat
+/[Aa]ssets/_Exposure/Materials/Polish_*.mat.meta
