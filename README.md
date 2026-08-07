@@ -9,7 +9,7 @@ Unity 6000.5.7f1 · URP · OpenXR · Meta Quest 2/3/3S · natives Handtracking
 
 ---
 
-## KOL-Auftrag
+## KOL-Auftrag (simuliert)
 
 *Fachliche Vorgabe, mitgeschrieben im Abstimmungsgespräch — Grundlage für die Umsetzung.*
 
@@ -18,7 +18,7 @@ Unity 6000.5.7f1 · URP · OpenXR · Meta Quest 2/3/3S · natives Handtracking
 - Höhenexposition durchführbar machen, ohne Hochhaus, Brücke oder Auswärtstermin.
 - Die Sitzung läuft geführt ab — die App liefert Situation, Anleitung und Dokumentation,
   ersetzt aber nicht die Behandlung.
-- Jede Übung ist ein **Verhaltensexperiment**: Befürchtung vorher benennen, prüfen,
+- Jede Sitzung ist ein **Verhaltensexperiment**: Befürchtung vorher benennen, prüfen,
   hinterher auswerten.
 
 ### Fachlicher Hintergrund
@@ -51,7 +51,6 @@ repliziert. Als Designleitlinie brauchbar, nicht als feste Regel.
 | Höhe | Etage 0 … 10 | Grundintensität |
 | Randschutz | Geländer → Glasbrüstung → offene Kante | Sicherheitssignal |
 | Untergrund | fest → Gitterrost → Glasboden → Steg | Tiefenwirkung |
-| Sicherheitsnetz | sichtbar / entfernt | Sicherheitssignal |
 | Aufgabe | stehen → an Rand treten → hinabblicken → Steg queren | Annäherung |
 | Wind | aus … stark | zusätzlicher Reiz |
 
