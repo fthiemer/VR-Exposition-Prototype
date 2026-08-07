@@ -29149,7 +29149,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Exposure.Runtime::Exposure.HeightExposureSessionController
   scenario: {fileID: 11400000, guid: 4547846a49a8f42459f219662ba0e98b, type: 2}
-  fearedOutcomes: {fileID: 0}
+  fearedOutcomes: {fileID: 11400000, guid: 7ca497dc345736c469a38c035c85be7b, type: 2}
   startOnPlay: 1
   skipIntro: 0
   environmentControllerBehaviour: {fileID: 311400930}
