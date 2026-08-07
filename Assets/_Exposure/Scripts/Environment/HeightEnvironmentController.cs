@@ -90,23 +90,7 @@ namespace Exposure
 
         public void Apply(HeightState state, bool instant)
         {
-            // --- discrete object states: immediate ---
-            SetActive(railingSolid, state.railing == RailingMode.SolidRailing);
-            SetActive(railingGlass, state.railing == RailingMode.GlassBarrier);
-
-            SetActive(surfaceSolid, state.surface == SurfaceType.Solid);
-            SetActive(surfaceGrating, state.surface == SurfaceType.Grating);
-            SetActive(surfaceGlass, state.surface == SurfaceType.Glass);
-            SetActive(surfacePlank, state.surface == SurfaceType.Plank);
-            SetActive(plankApron, state.surface == SurfaceType.Plank);
-
-            // The boundary tells the participant where the floor stops while they are looking
-            // down or ahead rather than at their feet. It is deliberately absent on the plank:
-            // there the exposed edge *is* the exercise.
-            SetActive(platformBoundary, state.surface != SurfaceType.Plank);
-
-            SetActive(safetyNet, state.safetyNetVisible);
-
+            // Ambient audio follows the height, so it changes with the movement, not after it.
             if (windAudio != null)
                 windAudio.volume = state.windIntensity * maxWindVolume;
 
@@ -125,16 +109,42 @@ namespace Exposure
             if (instant || transitionSeconds <= 0f)
             {
                 _riding = false;
+                ApplyDiscreteState(state);
                 SetY(targetY);
             }
             else
             {
+                // The railing and floor change on arrival, not on departure. Swapping them at
+                // the moment the lift starts meant the platform visibly rebuilt itself under
+                // someone who was still travelling -- the glass barrier appearing mid-ride reads
+                // as a glitch, and it also gives away the next step's conditions before they
+                // have arrived to face them.
                 _riding = true;
-                _moveRoutine = StartCoroutine(MoveTo(targetY));
+                _moveRoutine = StartCoroutine(MoveTo(targetY, state));
             }
         }
 
-        private IEnumerator MoveTo(float targetY)
+        /// <summary>Swaps the railing, floor and boundary objects for a state.</summary>
+        private void ApplyDiscreteState(HeightState state)
+        {
+            SetActive(railingSolid, state.railing == RailingMode.SolidRailing);
+            SetActive(railingGlass, state.railing == RailingMode.GlassBarrier);
+
+            SetActive(surfaceSolid, state.surface == SurfaceType.Solid);
+            SetActive(surfaceGrating, state.surface == SurfaceType.Grating);
+            SetActive(surfaceGlass, state.surface == SurfaceType.Glass);
+            SetActive(surfacePlank, state.surface == SurfaceType.Plank);
+            SetActive(plankApron, state.surface == SurfaceType.Plank);
+
+            // The boundary tells the participant where the floor stops while they are looking
+            // down or ahead rather than at their feet. It is deliberately absent on the plank:
+            // there the exposed edge *is* the exercise.
+            SetActive(platformBoundary, state.surface != SurfaceType.Plank);
+
+            SetActive(safetyNet, state.safetyNetVisible);
+        }
+
+        private IEnumerator MoveTo(float targetY, HeightState arrivalState)
         {
             if (elevatorAudio != null && !Mathf.Approximately(platformRig.localPosition.y, targetY))
             {
@@ -152,7 +162,11 @@ namespace Exposure
                 yield return null;
             }
             SetY(targetY);
-            _riding = false; // arrived -- the task may start now
+
+            // Arrived: now the platform takes the shape of the level being entered, and only
+            // then does the session consider the ride finished.
+            ApplyDiscreteState(arrivalState);
+            _riding = false;
 
             // Fade rather than cut: the clip is longer than the ride, and a hard stop on
             // arrival reads as a glitch rather than as the lift settling.
