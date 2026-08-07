@@ -284,20 +284,23 @@ namespace Exposure
                 CurrentVariant = variant;
                 OnTaskVariantChanged?.Invoke(variant);
 
-                // --- one gate on the ground: what is up there, and confirming rides the lift ---
-                // There used to be a second confirmation between "ready" and "go up". It asked
-                // the same question twice in a row from the same spot, so it read as a misclick
-                // rather than as a considered second decision.
-                SetState(SessionState.AwaitingReady);
-                _readyConfirmed = false;
-                while (!_readyConfirmed)
+                // --- the ride gate, but only when there is actually a ride ---
+                // Repeating a task or picking another one on the same floor kept showing the
+                // "go up" screen, so people were asked to confirm a journey that never happened.
+                // The gate exists to stop the floor changing under someone unannounced; with no
+                // floor change there is nothing to announce.
+                bool isFloorChange = floorIndex != _appliedStepIndex;
+                if (isFloorChange)
                 {
-                    if (ShouldAbort()) { Abort(HeartRateReason()); yield break; }
-                    yield return null;
+                    SetState(SessionState.AwaitingReady);
+                    _readyConfirmed = false;
+                    while (!_readyConfirmed)
+                    {
+                        if (ShouldAbort()) { Abort(HeartRateReason()); yield break; }
+                        yield return null;
+                    }
                 }
 
-                // --- move to the level (ride it out whenever the floor actually changes) ---
-                bool isFloorChange = floorIndex != _appliedStepIndex;
                 _env?.Apply(variant.state, instant: !isFloorChange);
                 _appliedStepIndex = floorIndex;
                 _logger?.LogStepStart(floorIndex, step.stepId, CurrentHeartRate());

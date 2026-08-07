@@ -5733,6 +5733,7 @@ MonoBehaviour:
   taskStartClip: {fileID: 8300000, guid: 9a6d738025ed59f4fb946bb59c20e774, type: 3}
   holdLoopClip: {fileID: 0}
   completedClip: {fileID: 8300000, guid: ef4c9b3f649b7ee46848aef0f6cf3ae9, type: 3}
+  completedVolume: 0.36
   holdVolume: 0.35
   startPitch: 0.95
   endPitch: 1.15

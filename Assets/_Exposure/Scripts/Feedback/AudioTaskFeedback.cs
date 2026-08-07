@@ -28,6 +28,10 @@ namespace Exposure
         [Tooltip("Played once when the task is completed.")]
         [SerializeField] private AudioClip completedClip;
 
+        [Tooltip("Volume of the completion cue. Kept below full: it arrives right after a task " +
+                 "someone found frightening, where a loud noise startles rather than rewards.")]
+        [SerializeField, Range(0f, 1f)] private float completedVolume = 0.45f;
+
         [Header("Hold loop")]
         [SerializeField, Range(0f, 1f)] private float holdVolume = 0.35f;
 
@@ -88,7 +92,8 @@ public void TaskStarted(TaskType task)
 public void TaskCompleted()
         {
             StopHum();
-            _oneShotSource.PlayOneShot(completedClip != null ? completedClip : CompletionChime());
+            _oneShotSource.PlayOneShot(completedClip != null ? completedClip : CompletionChime(),
+                                       completedVolume);
         }
 
         public void TaskCancelled() => StopHum();
