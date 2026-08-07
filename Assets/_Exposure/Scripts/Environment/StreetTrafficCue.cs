@@ -23,6 +23,10 @@ namespace Exposure
         [Tooltip("Distance travelled before wrapping back to the start point.")]
         [SerializeField, Min(1f)] private float loopLength = 60f;
 
+        [Tooltip("Where along the loop this vehicle starts, in metres. Set by the generator so " +
+                 "a lane's vehicles are spaced out rather than randomly placed.")]
+        [SerializeField, Min(0f)] private float startOffset;
+
         private Vector3 _start;
         private Vector3 _dir;
         private float _travelled;
@@ -32,8 +36,10 @@ namespace Exposure
             _start = transform.localPosition;
             _dir = direction.sqrMagnitude < 0.0001f ? Vector3.right : direction.normalized;
 
-            // Spread the vehicles along the road instead of releasing them from one point.
-            _travelled = Random.Range(0f, loopLength);
+            // Spacing comes from the generator, not from Random. Random offsets put two cars in
+            // the same place often enough to be noticed, and vehicles occupying each other is
+            // the one thing that makes traffic stop reading as traffic.
+            _travelled = startOffset % loopLength;
         }
 
         private void Update()

@@ -37,14 +37,35 @@ namespace Exposure.EditorTools
         // on where a street is. Previously the buildings and cars were placed independently,
         // which is why the cars were not on anything.
         private const float RoadWidth = 7f;
-        private const float GroundMinX = -46f, GroundMaxX = 46f;
-        private const float GroundMinZ = -16f, GroundMaxZ = 62f;
 
-        /// <summary>Centre lines of the roads running left-right (along x), given as z values.</summary>
-        private static readonly float[] RoadsAlongX = { 6f, 38f };
+        /// <summary>Height of the pavement above the carriageway -- the kerb, and the level
+        /// everything standing on a block has to sit on.</summary>
+        private const float PavementTop = 0.18f;
+
+        /// <summary>
+        /// How far the whole ground sits below the platform's own floor.
+        ///
+        /// Without it the pavement's top surface was higher than the balcony floor, so at the
+        /// ground floor the platform was sunk into the pavement. A building's ground floor sits
+        /// a step above the street, not level with it.
+        /// </summary>
+        private const float GroundDrop = -0.5f;
+
+        private const float GroundMinX = -70f, GroundMaxX = 70f;
+        private const float GroundMinZ = -20f, GroundMaxZ = 96f;
+
+        /// <summary>
+        /// Centre lines of the roads running left-right (along x), given as z values.
+        ///
+        /// The first one used to be at z = 6, which put the kerb a metre and a half in front of
+        /// the balcony -- a tower block standing directly in the carriageway. There is a
+        /// forecourt in front of the building now, which is both what a building of this kind
+        /// has and what gives the drop something to fall past.
+        /// </summary>
+        private static readonly float[] RoadsAlongX = { 30f, 66f };
 
         /// <summary>Centre lines of the roads running away from the platform (along z), given as x values.</summary>
-        private static readonly float[] RoadsAlongZ = { -20f, 20f };
+        private static readonly float[] RoadsAlongZ = { -30f, 30f };
 
         [MenuItem("Exposure/Setup Height Cues")]
         public static void Build()
@@ -67,9 +88,15 @@ namespace Exposure.EditorTools
             BuildOwnFacade(root.transform);
             BuildGroundPlan(root.transform);
             BuildNeighbouringRoofs(root.transform);
-            BuildHazeLayers(root.transform);
             BuildRisingCues(root.transform);
             BuildStreetActivity(root.transform);
+
+            // BuildHazeLayers is deliberately not called. Stacked transparent quads were how the
+            // drop got its atmosphere before there was any fog; now that real distance fog does
+            // that job properly, looking down meant looking through four alpha planes stacked on
+            // top of it, which turned the whole view milky and hid the very ground it was meant
+            // to make feel far away. Transparent overdraw is also among the most expensive things
+            // a Quest 2 can be asked to do. The method is kept for the record, not used.
 
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             Debug.Log("[Exposure] Height cues built: facade, street grid with park, " +
@@ -144,6 +171,7 @@ namespace Exposure.EditorTools
         {
             var ground = new GameObject("GroundPlan");
             ground.transform.SetParent(parent, false);
+            ground.transform.localPosition = new Vector3(0f, GroundDrop, 0f);
 
             var pavement = Mat("Cue_Pavement", new Color(0.46f, 0.46f, 0.47f));
             var asphalt = Mat("Cue_Asphalt", new Color(0.17f, 0.17f, 0.19f));
@@ -154,47 +182,80 @@ namespace Exposure.EditorTools
             float midX = (GroundMinX + GroundMaxX) * 0.5f;
             float midZ = (GroundMinZ + GroundMaxZ) * 0.5f;
 
-            // The pavement is the raised surface and the carriageway sits below it, as on a real
-            // street. It was the other way round, which read as roads laid on top of the
-            // pavement -- a small thing from up here, but it is exactly the kind of detail that
-            // makes a place look built rather than assembled.
-            const float kerbHeight = 0.16f;
+            // One asphalt sheet is the ground level -- the carriageway everywhere, including
+            // under the blocks, where it is simply covered up.
+            MakeBox("Carriageway", ground.transform,
+                new Vector3(midX, -0.06f, midZ),
+                new Vector3(width, 0.12f, depth),
+                asphalt);
 
-            MakeBox("Pavement", ground.transform,
-                new Vector3(midX, -0.15f + kerbHeight, midZ),
-                new Vector3(width, 0.3f, depth),
-                pavement);
-
+            // Lane markings, only along the actual roads. Dashes rather than a solid line: the
+            // repetition is itself a ruler for the eye.
             foreach (float z in RoadsAlongX)
-            {
-                MakeBox($"Road_X_{z}", ground.transform,
-                    new Vector3(midX, -0.03f, z),
-                    new Vector3(width, 0.12f, RoadWidth),
-                    asphalt);
-
-                // Dashes rather than a solid line: the repetition is itself a ruler for the eye.
                 for (float x = GroundMinX + 3f; x < GroundMaxX; x += 6f)
                     MakeBox($"Mark_X_{z}_{x}", ground.transform,
-                        new Vector3(x, 0.02f, z),
-                        new Vector3(2.4f, 0.03f, 0.22f),
+                        new Vector3(x, 0.005f, z),
+                        new Vector3(2.4f, 0.02f, 0.22f),
                         marking);
-            }
 
             foreach (float x in RoadsAlongZ)
-            {
-                MakeBox($"Road_Z_{x}", ground.transform,
-                    new Vector3(x, -0.03f, midZ),
-                    new Vector3(RoadWidth, 0.12f, depth),
-                    asphalt);
-
                 for (float z = GroundMinZ + 3f; z < GroundMaxZ; z += 6f)
                     MakeBox($"Mark_Z_{x}_{z}", ground.transform,
-                        new Vector3(x, 0.02f, z),
-                        new Vector3(0.22f, 0.03f, 2.4f),
+                        new Vector3(x, 0.005f, z),
+                        new Vector3(0.22f, 0.02f, 2.4f),
                         marking);
-            }
 
+            BuildPavementBlocks(ground.transform, pavement);
             BuildPark(ground.transform);
+        }
+
+        /// <summary>
+        /// Raised pavement, one slab per city block, leaving the carriageways open.
+        ///
+        /// This was a single slab spanning the whole ground, which buried every road underneath
+        /// it -- the streets were built, just invisible. A pavement is not a surface the whole
+        /// city sits on; it is the raised part between the roads, and the step down to the
+        /// carriageway is what makes a street read as a street from above.
+        /// </summary>
+        private static void BuildPavementBlocks(Transform parent, Material pavement)
+        {
+            var blocks = new GameObject("PavementBlocks");
+            blocks.transform.SetParent(parent, false);
+
+            const float kerbHeight = PavementTop;
+
+            var xEdges = BlockEdges(RoadsAlongZ, GroundMinX, GroundMaxX);
+            var zEdges = BlockEdges(RoadsAlongX, GroundMinZ, GroundMaxZ);
+
+            for (int i = 0; i + 1 < xEdges.Count; i += 2)
+                for (int j = 0; j + 1 < zEdges.Count; j += 2)
+                {
+                    float x0 = xEdges[i], x1 = xEdges[i + 1];
+                    float z0 = zEdges[j], z1 = zEdges[j + 1];
+                    if (x1 - x0 < 0.5f || z1 - z0 < 0.5f) continue;
+
+                    MakeBox($"Pavement_{i}_{j}", blocks.transform,
+                        new Vector3((x0 + x1) * 0.5f, kerbHeight * 0.5f, (z0 + z1) * 0.5f),
+                        new Vector3(x1 - x0, kerbHeight, z1 - z0),
+                        pavement);
+                }
+        }
+
+        /// <summary>
+        /// Turns a set of road centre lines into the block boundaries between them, as pairs of
+        /// [start, end] values running from one ground edge to the other.
+        /// </summary>
+        private static System.Collections.Generic.List<float> BlockEdges(
+            float[] roadCentres, float min, float max)
+        {
+            var edges = new System.Collections.Generic.List<float> { min };
+            foreach (float centre in roadCentres)
+            {
+                edges.Add(centre - RoadWidth * 0.5f);
+                edges.Add(centre + RoadWidth * 0.5f);
+            }
+            edges.Add(max);
+            return edges;
         }
 
         /// <summary>
@@ -211,11 +272,14 @@ namespace Exposure.EditorTools
             var park = new GameObject("Park");
             park.transform.SetParent(parent, false);
 
-            // The block bounded by the two road pairs, inset so it does not touch the asphalt.
-            float minX = RoadsAlongZ[0] + RoadWidth * 0.5f + 1.5f;
-            float maxX = RoadsAlongZ[1] - RoadWidth * 0.5f - 1.5f;
-            float minZ = RoadsAlongX[0] + RoadWidth * 0.5f + 1.5f;
-            float maxZ = RoadsAlongX[1] - RoadWidth * 0.5f - 1.5f;
+            // The forecourt directly in front of the building, between its base and the first
+            // road. This is what the participant looks straight down onto, so it is the one
+            // block worth making green -- a car park there would waste the only ground they
+            // actually study.
+            float minX = RoadsAlongZ[0] + RoadWidth * 0.5f + 2f;
+            float maxX = RoadsAlongZ[1] - RoadWidth * 0.5f - 2f;
+            float minZ = 4f;                                        // clear of the building base
+            float maxZ = RoadsAlongX[0] - RoadWidth * 0.5f - 2f;
 
             var grass = Mat("Cue_Grass", new Color(0.30f, 0.44f, 0.24f));
             var path = Mat("Cue_ParkPath", new Color(0.62f, 0.57f, 0.46f));
@@ -223,15 +287,16 @@ namespace Exposure.EditorTools
             var foliage = Mat("Cue_Foliage", new Color(0.22f, 0.40f, 0.19f));
             var bushMat = Mat("Cue_Bush", new Color(0.26f, 0.46f, 0.22f));
 
+            // The park sits on its block, so its surface starts where the pavement ends.
             MakeBox("Lawn", park.transform,
-                new Vector3((minX + maxX) * 0.5f, 0.02f, (minZ + maxZ) * 0.5f),
-                new Vector3(maxX - minX, 0.08f, maxZ - minZ),
+                new Vector3((minX + maxX) * 0.5f, PavementTop + 0.03f, (minZ + maxZ) * 0.5f),
+                new Vector3(maxX - minX, 0.1f, maxZ - minZ),
                 grass);
 
             // A diagonal path, so the green block is not a plain rectangle from above.
             var walk = MakeBox("ParkPath", park.transform,
-                new Vector3((minX + maxX) * 0.5f, 0.06f, (minZ + maxZ) * 0.5f),
-                new Vector3(2.2f, 0.04f, maxZ - minZ + 6f),
+                new Vector3((minX + maxX) * 0.5f, PavementTop + 0.07f, (minZ + maxZ) * 0.5f),
+                new Vector3(2.6f, 0.04f, maxZ - minZ + 8f),
                 path);
             walk.transform.localRotation = Quaternion.Euler(0f, 28f, 0f);
 
@@ -245,7 +310,8 @@ namespace Exposure.EditorTools
                 float x = Random.Range(minX + 1f, maxX - 1f);
                 float z = Random.Range(minZ + 1f, maxZ - 1f);
                 float height = Random.Range(4f, 7f);
-                MakeTree(park.transform, $"Tree_{i}", new Vector3(x, 0f, z), height, trunk, foliage);
+                MakeTree(park.transform, $"Tree_{i}",
+                         new Vector3(x, PavementTop + 0.08f, z), height, trunk, foliage);
             }
 
             for (int i = 0; i < 26; i++)
@@ -255,7 +321,7 @@ namespace Exposure.EditorTools
                 float r = Random.Range(0.6f, 1.2f);
 
                 var bush = MakeSphere(park.transform, $"Bush_{i}",
-                    new Vector3(x, r * 0.45f, z), r, bushMat);
+                    new Vector3(x, PavementTop + 0.08f + r * 0.45f, z), r, bushMat);
                 bush.transform.localScale = new Vector3(r * 1.3f, r * 0.9f, r * 1.2f);
             }
         }
@@ -335,14 +401,14 @@ namespace Exposure.EditorTools
                 float x = layout[i].x, z = layout[i].y, h = layout[i].z, w = layout[i].w;
 
                 MakeBox($"Building_{i}", roofs.transform,
-                    new Vector3(x, h * 0.5f, z),
+                    new Vector3(x, PavementTop + h * 0.5f, z),
                     new Vector3(w, h, w),
                     body);
 
                 // A contrasting roof slab, so each roof reads as a surface at its own height
                 // rather than as the top of an untextured block.
                 MakeBox($"Roof_{i}", roofs.transform,
-                    new Vector3(x, h + 0.15f, z),
+                    new Vector3(x, PavementTop + h + 0.15f, z),
                     new Vector3(w * 1.04f, 0.3f, w * 1.04f),
                     roofTop);
             }
@@ -461,20 +527,20 @@ namespace Exposure.EditorTools
             {
                 // Two lanes, offset either side of the centre line, running opposite ways.
                 AddVehicles(street.transform, paints, ref index, count: 4,
-                    start: new Vector3(GroundMinX, 0.4f, z - RoadWidth * 0.22f),
+                    start: new Vector3(GroundMinX, 0.7f, z - RoadWidth * 0.22f),
                     direction: Vector3.right, loopLength: spanX, alongX: true);
                 AddVehicles(street.transform, paints, ref index, count: 4,
-                    start: new Vector3(GroundMaxX, 0.4f, z + RoadWidth * 0.22f),
+                    start: new Vector3(GroundMaxX, 0.7f, z + RoadWidth * 0.22f),
                     direction: Vector3.left, loopLength: spanX, alongX: true);
             }
 
             foreach (float x in RoadsAlongZ)
             {
                 AddVehicles(street.transform, paints, ref index, count: 3,
-                    start: new Vector3(x - RoadWidth * 0.22f, 0.4f, GroundMinZ),
+                    start: new Vector3(x - RoadWidth * 0.22f, 0.7f, GroundMinZ),
                     direction: Vector3.forward, loopLength: spanZ, alongX: false);
                 AddVehicles(street.transform, paints, ref index, count: 3,
-                    start: new Vector3(x + RoadWidth * 0.22f, 0.4f, GroundMaxZ),
+                    start: new Vector3(x + RoadWidth * 0.22f, 0.7f, GroundMaxZ),
                     direction: Vector3.back, loopLength: spanZ, alongX: false);
             }
         }
@@ -483,6 +549,12 @@ namespace Exposure.EditorTools
                                         int count, Vector3 start, Vector3 direction,
                                         float loopLength, bool alongX)
         {
+            // One speed per lane. Vehicles in a lane that move at different speeds inevitably
+            // catch up with each other and drive through one another; sharing a speed keeps the
+            // spacing they start with.
+            float laneSpeed = Random.Range(5f, 7.5f);
+            float spacing = loopLength / count;
+
             for (int i = 0; i < count; i++)
             {
                 var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -490,10 +562,11 @@ namespace Exposure.EditorTools
                 go.transform.SetParent(parent, false);
                 go.transform.localPosition = start;
 
-                // Roughly car-sized, oriented along its own road.
+                // Roughly car-sized and sitting on the carriageway rather than sunk into it.
+                float length = Random.Range(3.6f, 4.6f);
                 go.transform.localScale = alongX
-                    ? new Vector3(Random.Range(3.6f, 4.6f), 1.4f, 1.8f)
-                    : new Vector3(1.8f, 1.4f, Random.Range(3.6f, 4.6f));
+                    ? new Vector3(length, 1.4f, 1.8f)
+                    : new Vector3(1.8f, 1.4f, length);
 
                 Object.DestroyImmediate(go.GetComponent<Collider>());
                 go.GetComponent<Renderer>().sharedMaterial = paints[index % paints.Length];
@@ -501,8 +574,9 @@ namespace Exposure.EditorTools
                 var cue = go.AddComponent<StreetTrafficCue>();
                 var so = new SerializedObject(cue);
                 so.FindProperty("direction").vector3Value = direction;
-                so.FindProperty("speed").floatValue = Random.Range(4.5f, 8f);
+                so.FindProperty("speed").floatValue = laneSpeed;
                 so.FindProperty("loopLength").floatValue = loopLength;
+                so.FindProperty("startOffset").floatValue = spacing * i;
                 so.ApplyModifiedPropertiesWithoutUndo();
 
                 index++;
@@ -548,6 +622,13 @@ namespace Exposure.EditorTools
             var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
             var mat = new Material(shader) { name = name };
             mat.color = color;
+
+            // Matte. URP Lit defaults to 0.5 smoothness, which is wet plastic -- on a whole city
+            // of concrete, asphalt and grass that produced one enormous specular highlight where
+            // the sun hit, washing the middle of the view to white. None of these surfaces are
+            // shiny in reality, and rough surfaces are also what let shape read through shading.
+            mat.SetFloat("_Smoothness", 0.06f);
+            mat.SetFloat("_Metallic", 0f);
 
             // GPU instancing is deliberately left off. It looks like the obvious win here --
             // hundreds of copies of one primitive -- but URP's SRP Batcher takes precedence and

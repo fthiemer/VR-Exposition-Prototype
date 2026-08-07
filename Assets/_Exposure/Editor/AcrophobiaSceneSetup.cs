@@ -510,7 +510,7 @@ namespace Exposure.EditorTools
             // Coming from the front-left and fairly high: the balcony faces +z, so light from
             // that side reaches it, and a steep angle keeps the railing's shadow short.
             sun.transform.rotation = Quaternion.Euler(50f, 205f, 0f);
-            sun.intensity = 1.15f;
+            sun.intensity = 1f;
             sun.shadows = LightShadows.Soft;
         }
 
@@ -533,6 +533,20 @@ namespace Exposure.EditorTools
             // Slightly blue and lighter than the buildings, so distance reads as air rather than
             // dirt, and close to the sky so the two do not meet in a seam at the horizon.
             RenderSettings.fogColor = new Color(0.70f, 0.77f, 0.86f);
+
+            // Explicit sky/ground fill rather than whatever the skybox happens to contribute.
+            // Without it every surface facing away from the sun goes near-black, which outdoors
+            // is simply wrong -- open sky is a huge light source, and on a clear day the shaded
+            // side of a building is blue-grey, not black. It also cost the platform its floor:
+            // an unlit surface has no shading gradient, so there was nothing underfoot to see.
+            // Kept low. Ambient fills the shadows; it is not a second sun. At full strength it
+            // added to the directional light on every lit surface too, so the whole scene rose
+            // above the bloom threshold and the view turned into white haze.
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor     = new Color(0.42f, 0.50f, 0.62f);
+            RenderSettings.ambientEquatorColor = new Color(0.34f, 0.36f, 0.40f);
+            RenderSettings.ambientGroundColor  = new Color(0.20f, 0.19f, 0.18f);
+            RenderSettings.ambientIntensity = 0.55f;
         }
 
         /// <summary>
@@ -560,27 +574,33 @@ namespace Exposure.EditorTools
                 AssetDatabase.CreateAsset(profile, profilePath);
             }
 
-            var bloom = EnsureEffect<Bloom>(profile, profilePath);
-            bloom.active = true;
-            // Threshold has to sit below 1.0 while the URP asset has HDR off: without HDR the
-            // colour buffer clamps at 1.0, so a higher threshold is never crossed and the whole
-            // effect silently does nothing.
-            bool hdr = UniversalRenderPipeline.asset != null && UniversalRenderPipeline.asset.supportsHDR;
-            bloom.threshold.overrideState = true; bloom.threshold.value = hdr ? 1.05f : 0.85f;
-            bloom.intensity.overrideState = true; bloom.intensity.value = 0.55f;
-            bloom.scatter.overrideState = true;   bloom.scatter.value = 0.6f;
-            bloom.highQualityFiltering.overrideState = true;
-            bloom.highQualityFiltering.value = false; // fast mode: this is a standalone headset
-
+            // Two effects only, both close to free, both in service of looking real.
+            //
+            // Bloom and vignette were here and are deliberately gone. Bloom is the most
+            // expensive post effect on a Quest 2 -- several blur passes, paid twice for stereo --
+            // and outdoors it mostly veils the scene rather than adding anything; it was already
+            // having to be turned down to stay unnoticeable, which is a sign it was not earning
+            // its cost. A vignette is worse than useless in VR: it is a camera lens artefact,
+            // eyes do not have one, and darkened edges inside a headset read as the hardware
+            // failing rather than as atmosphere.
             var tonemapping = EnsureEffect<Tonemapping>(profile, profilePath);
             tonemapping.active = true;
             tonemapping.mode.overrideState = true;
-            tonemapping.mode.value = TonemappingMode.Neutral; // ACES shifts colour too hard here
+            // Neutral, not ACES: ACES crushes shadows and shifts hue hard, which looks cinematic
+            // and therefore unreal. Neutral just maps the range without editorialising.
+            tonemapping.mode.value = TonemappingMode.Neutral;
 
-            var vignette = EnsureEffect<Vignette>(profile, profilePath);
-            vignette.active = true;
-            vignette.intensity.overrideState = true; vignette.intensity.value = 0.18f;
-            vignette.smoothness.overrideState = true; vignette.smoothness.value = 0.6f;
+            // A single lookup per pixel, so effectively free, and it does the work bloom was
+            // being asked to do: a touch of contrast so surfaces separate, and slightly reduced
+            // saturation because untextured primitives read as toys at full saturation.
+            var colour = EnsureEffect<ColorAdjustments>(profile, profilePath);
+            colour.active = true;
+            colour.contrast.overrideState = true;   colour.contrast.value = 12f;
+            colour.saturation.overrideState = true; colour.saturation.value = -8f;
+            colour.postExposure.overrideState = true; colour.postExposure.value = -0.1f;
+
+            RemoveEffect<Bloom>(profile);
+            RemoveEffect<Vignette>(profile);
 
             EditorUtility.SetDirty(profile);
             AssetDatabase.SaveAssets();
@@ -635,6 +655,18 @@ namespace Exposure.EditorTools
             effect.name = typeof(T).Name;
             AssetDatabase.AddObjectToAsset(effect, profilePath);
             return effect;
+        }
+
+        /// <summary>
+        /// Drops an effect from a profile, sub-asset and all. Removing it from the list alone
+        /// leaves the object inside the asset file, where it does nothing but is still there to
+        /// confuse whoever opens it next.
+        /// </summary>
+        private static void RemoveEffect<T>(VolumeProfile profile) where T : VolumeComponent
+        {
+            if (!profile.TryGet<T>(out var effect)) return;
+            profile.Remove<T>();
+            Undo.DestroyObjectImmediate(effect);
         }
 
         /// <summary>

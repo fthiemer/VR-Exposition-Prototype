@@ -219,10 +219,14 @@ private void ShowOutcomeChoice(FearedOutcomeCatalog catalog, Action<string> onCh
             titleGo.transform.SetParent(_root, false);
             _title = titleGo.GetComponent<Text>();
             _title.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            _title.fontSize = 30;
             _title.color = textColor;
             _title.alignment = TextAnchor.UpperCenter;
             _title.horizontalOverflow = HorizontalWrapMode.Wrap;
+            // Questions range from four words to a full sentence plus a quoted outcome, so the
+            // title shrinks to fit rather than being clipped at whichever size suits one of them.
+            _title.resizeTextForBestFit = true;
+            _title.resizeTextMinSize = 14;
+            _title.resizeTextMaxSize = 34;
             var titleRect = titleGo.GetComponent<RectTransform>();
             titleRect.anchorMin = new Vector2(0f, 0.68f);
             titleRect.anchorMax = new Vector2(1f, 1f);
@@ -256,11 +260,11 @@ private void ShowOutcomeChoice(FearedOutcomeCatalog catalog, Action<string> onCh
             textGo.transform.SetParent(go.transform, false);
             var text = textGo.GetComponent<Text>();
             text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = 30;
             text.color = textColor;
             text.alignment = TextAnchor.MiddleCenter;
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
             text.text = label;
+            FitLabel(text);
             Stretch(textGo.GetComponent<RectTransform>());
 
             go.GetComponent<Button>().onClick.AddListener(() =>
@@ -276,6 +280,23 @@ private void ShowOutcomeChoice(FearedOutcomeCatalog catalog, Action<string> onCh
         /// Builds a 0-100 slider plus the three scale anchors underneath it. The handle is
         /// deliberately wide: it is poked, not pinched, so it needs to be an easy target.
         /// </summary>
+        /// <summary>
+        /// Lets a label shrink to fit its button instead of being clipped.
+        ///
+        /// Button height is whatever is left after dividing the panel between however many
+        /// options there are, so a fixed font size can only ever be right for one panel. The
+        /// eight feared outcomes are full sentences in the smallest buttons, which is exactly
+        /// where a fixed size silently swallowed half the text -- and an option you cannot read
+        /// is an option you cannot choose.
+        /// </summary>
+        private static void FitLabel(Text text)
+        {
+            text.resizeTextForBestFit = true;
+            text.resizeTextMinSize = 12;
+            text.resizeTextMaxSize = 32;
+            text.verticalOverflow = VerticalWrapMode.Truncate;
+        }
+
         /// <summary>
         /// A greyed, unclickable entry. Carries no Button at all rather than a disabled one:
         /// a disabled Button still takes the poke and swallows it, which feels like the panel
@@ -294,11 +315,11 @@ private void ShowOutcomeChoice(FearedOutcomeCatalog catalog, Action<string> onCh
             textGo.transform.SetParent(go.transform, false);
             var text = textGo.GetComponent<Text>();
             text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = 24;
             text.color = mutedTextColor;
             text.alignment = TextAnchor.MiddleCenter;
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
             text.text = label;
+            FitLabel(text);
             Stretch(textGo.GetComponent<RectTransform>());
 
             _buttons.Add(go);
