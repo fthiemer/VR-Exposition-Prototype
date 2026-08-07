@@ -465,25 +465,30 @@ namespace Exposure.EditorTools
                 AssetDatabase.CreateAsset(profile, profilePath);
             }
 
-            if (!profile.TryGet<Bloom>(out var bloom)) bloom = profile.Add<Bloom>(true);
+            var bloom = EnsureEffect<Bloom>(profile, profilePath);
             bloom.active = true;
-            bloom.threshold.overrideState = true; bloom.threshold.value = 1.05f;
+            // Threshold has to sit below 1.0 while the URP asset has HDR off: without HDR the
+            // colour buffer clamps at 1.0, so a higher threshold is never crossed and the whole
+            // effect silently does nothing.
+            bool hdr = UniversalRenderPipeline.asset != null && UniversalRenderPipeline.asset.supportsHDR;
+            bloom.threshold.overrideState = true; bloom.threshold.value = hdr ? 1.05f : 0.85f;
             bloom.intensity.overrideState = true; bloom.intensity.value = 0.55f;
             bloom.scatter.overrideState = true;   bloom.scatter.value = 0.6f;
             bloom.highQualityFiltering.overrideState = true;
             bloom.highQualityFiltering.value = false; // fast mode: this is a standalone headset
 
-            if (!profile.TryGet<Tonemapping>(out var tonemapping)) tonemapping = profile.Add<Tonemapping>(true);
+            var tonemapping = EnsureEffect<Tonemapping>(profile, profilePath);
             tonemapping.active = true;
             tonemapping.mode.overrideState = true;
             tonemapping.mode.value = TonemappingMode.Neutral; // ACES shifts colour too hard here
 
-            if (!profile.TryGet<Vignette>(out var vignette)) vignette = profile.Add<Vignette>(true);
+            var vignette = EnsureEffect<Vignette>(profile, profilePath);
             vignette.active = true;
             vignette.intensity.overrideState = true; vignette.intensity.value = 0.18f;
             vignette.smoothness.overrideState = true; vignette.smoothness.value = 0.6f;
 
             EditorUtility.SetDirty(profile);
+            AssetDatabase.SaveAssets();
 
             var volumeGo = GameObject.Find("ExposurePostProcessing");
             if (volumeGo == null)
@@ -516,6 +521,25 @@ namespace Exposure.EditorTools
             if (urp != null && !urp.supportsHDR)
                 Debug.Log("[Exposure] URP asset has HDR off. Bloom still works, but its " +
                           "threshold above 1.0 has less to catch -- worth checking on device.");
+        }
+
+        /// <summary>
+        /// Adds a volume effect to a profile *and persists it*.
+        ///
+        /// VolumeProfile.Add only builds the component in memory -- each effect is a separate
+        /// object that has to be attached to the asset file explicitly, or the profile
+        /// serialises with an empty component list. It looks correct until the next domain
+        /// reload, at which point every effect is silently gone.
+        /// </summary>
+        private static T EnsureEffect<T>(VolumeProfile profile, string profilePath)
+            where T : VolumeComponent
+        {
+            if (profile.TryGet<T>(out var existing)) return existing;
+
+            var effect = profile.Add<T>(true);
+            effect.name = typeof(T).Name;
+            AssetDatabase.AddObjectToAsset(effect, profilePath);
+            return effect;
         }
 
         /// <summary>

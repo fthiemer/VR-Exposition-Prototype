@@ -533,6 +533,11 @@ namespace Exposure.EditorTools
             var mat = new Material(shader) { name = name };
             mat.color = color;
 
+            // GPU instancing is deliberately left off. It looks like the obvious win here --
+            // hundreds of copies of one primitive -- but URP's SRP Batcher takes precedence and
+            // bypasses instancing entirely. Measured: enabling it produced zero instanced draw
+            // calls and changed nothing. The SRP Batcher is already doing the work, which is why
+            // ~163 draw calls cost only 6 setPass calls.
             if (transparent)
             {
                 mat.SetFloat("_Surface", 1f);
