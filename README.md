@@ -117,12 +117,15 @@ Assets/_Exposure/
 ├── Scripts/
 │   ├── Data/         Zustands- und Definitionstypen (generisch über TState)
 │   ├── Runtime/      Ablaufsteuerung, Interfaces für Prompt/Aufgabe/Feedback
-│   ├── Environment/  Szenario-spezifische Umgebungssteuerung
+│   ├── Environment/  Szenario-spezifische Umgebungssteuerung, Höhencues
 │   ├── Feedback/     Zielmarkierung, Ton, Partikel (einsteckbar)
 │   └── IO/           Protokollierung (CSV)
 ├── Editor/           Szenario-Generatoren, Szenen-Setup, Umgebungs-Generator
 ├── Scenarios/        Generierte ScriptableObject-Assets
 ├── Content/          Coach-Texte (CSV, IDs für spätere Audio-Zuordnung)
+├── Audio/            Umgebungston (freesound, CC0/CC BY — siehe ASSETS.md)
+├── Materials/        Blockout-Materialien, aus den Generatoren erzeugt
+├── Settings/         Post-Processing-Profil (Bloom, Tonemapping, Vignette)
 └── Scenes/           Exposure_Acrophobia.unity
 ```
 

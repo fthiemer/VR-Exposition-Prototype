@@ -109,7 +109,15 @@ namespace Exposure
         private bool _taskCompletedByDetection;
         private bool _readyConfirmed;
         private bool _conditionAcknowledged;
-        private int _lastAppliedFloor = -1;
+
+        /// <summary>
+        /// Index of the step whose state is currently applied, or -1 while the participant is
+        /// still on the ground. Deliberately the *step* index and not a floor number: TState is
+        /// generic, so this class cannot read a floor out of it. -1 rather than 0 matters --
+        /// with 0 the first step compares equal to the starting value and the lift teleports
+        /// instead of travelling.
+        /// </summary>
+        private int _appliedStepIndex = -1;
 
         /// <summary>Environment state to apply before the first level (ground floor).</summary>
         protected abstract TState DefaultState { get; }
@@ -191,7 +199,7 @@ namespace Exposure
             HighestUnlockedStepIndex = 0;
             CurrentSessionNumber = 1;
             CurrentStepIndex = -1;
-            _lastAppliedFloor = -1;
+            _appliedStepIndex = -1;
             SetState(SessionState.Idle);
         }
 
@@ -201,7 +209,7 @@ namespace Exposure
 
             // Ground floor first -- never drop someone straight into height.
             _env?.Apply(DefaultState, instant: true);
-            _lastAppliedFloor = 0;
+            _appliedStepIndex = -1;
             yield return null;
 
             // --- 1. Einführung: choose the feared outcome, state E1 (ground, skippable) ---
@@ -281,10 +289,10 @@ namespace Exposure
                     yield return null;
                 }
 
-                // --- move to the level (elevator ride only on an actual floor change) ---
-                bool isFloorChange = floorIndex != _lastAppliedFloor;
+                // --- move to the level (ride it out whenever the floor actually changes) ---
+                bool isFloorChange = floorIndex != _appliedStepIndex;
                 _env?.Apply(variant.state, instant: !isFloorChange);
-                _lastAppliedFloor = floorIndex;
+                _appliedStepIndex = floorIndex;
                 _logger?.LogStepStart(floorIndex, step.stepId, CurrentHeartRate());
 
                 // --- carry out the task ---
