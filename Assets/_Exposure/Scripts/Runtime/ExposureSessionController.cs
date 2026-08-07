@@ -344,15 +344,18 @@ namespace Exposure
                     choices.Add(ChoiceOption.Available(UIText.Get("choice_other_task")));
                 }
 
-                // "One floor up" always appears, greyed until this floor has actually been
-                // completed -- so the way onwards is visible before it is open.
+                // "One floor up" only appears once it is actually available. Showing it greyed
+                // was meant to reveal the way onwards, but on this screen it read as a refusal --
+                // the participant has just been through a task and is being told what they
+                // cannot do. The locked state belongs on the floor list, where it is a map of
+                // where the building goes; here it is only in the way.
                 bool canGoUp = floorIndex + 1 <= HighestUnlockedStepIndex
                                && floorIndex + 1 < scenario.steps.Count;
-                options.Add(TaskChoiceOption.NextFloor);
-                choices.Add(canGoUp
-                    ? ChoiceOption.Available(UIText.Get("choice_next_floor"))
-                    : ChoiceOption.Locked(UIText.Get("choice_next_floor"),
-                                          UIText.Get("choice_next_floor_locked")));
+                if (canGoUp)
+                {
+                    options.Add(TaskChoiceOption.NextFloor);
+                    choices.Add(ChoiceOption.Available(UIText.Get("choice_next_floor")));
+                }
 
                 options.Add(TaskChoiceOption.EndSession);
                 choices.Add(ChoiceOption.Available(UIText.Get("choice_end_session")));

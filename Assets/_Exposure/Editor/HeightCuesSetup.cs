@@ -379,6 +379,10 @@ namespace Exposure.EditorTools
         {
             var roofs = new GameObject("NeighbouringRoofs");
             roofs.transform.SetParent(parent, false);
+            // Same drop as the ground plan. Without it the buildings sat at their own y = 0
+            // while the pavement had been lowered, so the whole city hovered half a metre above
+            // the street it was supposed to stand on.
+            roofs.transform.localPosition = new Vector3(0f, GroundDrop, 0f);
 
             var body = Mat("Cue_Neighbour", new Color(0.42f, 0.44f, 0.47f));
             var roofTop = Mat("Cue_RoofTop", new Color(0.28f, 0.29f, 0.31f));
@@ -580,6 +584,7 @@ namespace Exposure.EditorTools
         {
             var street = new GameObject("StreetActivity");
             street.transform.SetParent(parent, false);
+            street.transform.localPosition = new Vector3(0f, GroundDrop, 0f); // stand on the road
 
             // Several body colours: a row of identical grey boxes reads as a pattern, and the
             // eye stops treating it as separate objects at separate distances.
