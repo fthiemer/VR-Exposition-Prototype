@@ -243,20 +243,24 @@ namespace Exposure.EditorTools
             birds.transform.SetParent(parent, false);
 
             Random.InitState(1312);
-            for (int i = 0; i < prefabs.Count * 2; i++)
+            for (int i = 0; i < prefabs.Count * 4; i++)
             {
                 var instance = (GameObject)PrefabUtility.InstantiatePrefab(
                     prefabs[i % prefabs.Count], birds.transform);
                 if (instance == null) continue;
 
+                // Close enough to read as birds. At 18-55 m they were a few pixels of animated
+                // texture and went unnoticed entirely -- which wasted the one cue that has a
+                // real-world size the eye already knows. Brought in to roughly the distance you
+                // would actually see a bird from a balcony, biased to the open side.
                 float angle = Random.Range(0f, Mathf.PI * 2f);
-                float radius = Random.Range(18f, 55f);
+                float radius = Random.Range(7f, 22f);
 
                 // Spread across the height the participant travels, so some are always below.
                 instance.transform.localPosition = new Vector3(
                     Mathf.Cos(angle) * radius,
-                    Random.Range(6f, 30f),
-                    Mathf.Sin(angle) * radius);
+                    Random.Range(4f, 28f),
+                    Mathf.Abs(Mathf.Sin(angle)) * radius + 4f);
                 instance.transform.localRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
 
                 foreach (var collider in instance.GetComponentsInChildren<Collider>())
@@ -466,10 +470,18 @@ namespace Exposure.EditorTools
         private static void ApplyDepthFog()
         {
             RenderSettings.fog = true;
-            RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogColor = new Color(0.62f, 0.68f, 0.75f);
-            RenderSettings.fogStartDistance = 45f;
-            RenderSettings.fogEndDistance = 230f;
+
+            // Exponential-squared rather than linear. Linear fog thickens at a constant rate,
+            // which is not how air behaves and reads as a grey curtain hung at a fixed distance
+            // -- the giveaway is a visible band where it starts. Real haze accumulates with the
+            // amount of air you look through, so it stays almost clear nearby and closes in
+            // gradually; squared exponential is the cheap approximation of that.
+            RenderSettings.fogMode = FogMode.ExponentialSquared;
+            RenderSettings.fogDensity = 0.0055f;
+
+            // Slightly blue and lighter than the buildings, so distance reads as air rather
+            // than as dirt, and matched to the horizon so the two do not meet in a seam.
+            RenderSettings.fogColor = new Color(0.70f, 0.77f, 0.86f);
         }
 
         /// <summary>The plain URP Lit material Unity primitives are created with.</summary>

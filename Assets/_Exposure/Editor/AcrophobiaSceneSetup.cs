@@ -117,6 +117,7 @@ namespace Exposure.EditorTools
             BuildEnvironmentAudio(envRoot.transform, env);
             BuildPostProcessing();
             SetSunForBalcony();
+            ApplyAtmosphere();
 
             // A longer ride. Three seconds barely registered as travel; the transition is what
             // sells having gone somewhere, and it is also the moment the participant has to
@@ -511,6 +512,27 @@ namespace Exposure.EditorTools
             sun.transform.rotation = Quaternion.Euler(50f, 205f, 0f);
             sun.intensity = 1.15f;
             sun.shadows = LightShadows.Soft;
+        }
+
+        /// <summary>
+        /// Distance haze. Lives in the base setup, not the polish pass, because fog settings are
+        /// part of the scene and the blockout build needs them too -- depth over a drop is most
+        /// of what makes it read as a drop.
+        ///
+        /// Exponential-squared rather than linear: linear fog thickens at a constant rate, which
+        /// air does not, and it shows a visible band where it starts. Real haze builds up with
+        /// the amount of air you look through, staying near-clear close by and closing in
+        /// gradually.
+        /// </summary>
+        private static void ApplyAtmosphere()
+        {
+            RenderSettings.fog = true;
+            RenderSettings.fogMode = FogMode.ExponentialSquared;
+            RenderSettings.fogDensity = 0.0055f;
+
+            // Slightly blue and lighter than the buildings, so distance reads as air rather than
+            // dirt, and close to the sky so the two do not meet in a seam at the horizon.
+            RenderSettings.fogColor = new Color(0.70f, 0.77f, 0.86f);
         }
 
         /// <summary>
