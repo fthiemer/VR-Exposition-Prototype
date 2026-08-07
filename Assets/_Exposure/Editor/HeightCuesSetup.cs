@@ -293,10 +293,13 @@ namespace Exposure.EditorTools
                 new Vector3(maxX - minX, 0.1f, maxZ - minZ),
                 grass);
 
-            // A diagonal path, so the green block is not a plain rectangle from above.
+            // A diagonal path, so the green block is not a plain rectangle from above. Kept short
+            // enough that the rotation does not push its ends out over the pavement -- a footpath
+            // that runs off the grass and across the kerb undoes the tidiness it was added for.
+            float pathLength = (maxZ - minZ) * 0.8f;
             var walk = MakeBox("ParkPath", park.transform,
                 new Vector3((minX + maxX) * 0.5f, PavementTop + 0.07f, (minZ + maxZ) * 0.5f),
-                new Vector3(2.6f, 0.04f, maxZ - minZ + 8f),
+                new Vector3(2.6f, 0.04f, pathLength),
                 path);
             walk.transform.localRotation = Quaternion.Euler(0f, 28f, 0f);
 
@@ -377,41 +380,57 @@ namespace Exposure.EditorTools
             var roofs = new GameObject("NeighbouringRoofs");
             roofs.transform.SetParent(parent, false);
 
-            // x, z, roof height, footprint -- each sits inside a block of the grid.
-            // Blocks along x: < -17.5 | -10.5..10.5 | > 17.5   (roads at -14 and 14)
-            // Blocks along z: < 2.5   | 9.5..22.5   | > 29.5   (roads at 6 and 26)
-            // The central block (-10.5..10.5, 9.5..22.5) is the park and stays empty.
-            var layout = new[]
-            {
-                new Vector4(-24f,  -4f, 10f,  9f),
-                new Vector4(  0f,  -5f,  7f,  9f),
-                new Vector4( 24f,  -3f, 16f,  9f),
-                new Vector4(-24f,  16f, 19f,  9f),
-                new Vector4( 24f,  16f, 13f,  9f),
-                new Vector4(-24f,  36f, 23f,  9f),
-                new Vector4(  0f,  37f, 11f, 12f),
-                new Vector4( 24f,  35f,  8f,  9f),
-            };
-
             var body = Mat("Cue_Neighbour", new Color(0.42f, 0.44f, 0.47f));
             var roofTop = Mat("Cue_RoofTop", new Color(0.28f, 0.29f, 0.31f));
 
-            for (int i = 0; i < layout.Length; i++)
-            {
-                float x = layout[i].x, z = layout[i].y, h = layout[i].z, w = layout[i].w;
+            // Positions come from the same block grid the pavement uses. They used to be written
+            // out as literals, which meant that moving the roads left the buildings standing in
+            // the middle of the carriageway -- the second time in this file that hardcoded
+            // coordinates silently stopped matching the layout they were derived from.
+            var xEdges = BlockEdges(RoadsAlongZ, GroundMinX, GroundMaxX);
+            var zEdges = BlockEdges(RoadsAlongX, GroundMinZ, GroundMaxZ);
 
-                MakeBox($"Building_{i}", roofs.transform,
-                    new Vector3(x, PavementTop + h * 0.5f, z),
-                    new Vector3(w, h, w),
-                    body);
+            Random.InitState(505);
+            int index = 0;
 
-                // A contrasting roof slab, so each roof reads as a surface at its own height
-                // rather than as the top of an untextured block.
-                MakeBox($"Roof_{i}", roofs.transform,
-                    new Vector3(x, PavementTop + h + 0.15f, z),
-                    new Vector3(w * 1.04f, 0.3f, w * 1.04f),
-                    roofTop);
-            }
+            for (int i = 0; i + 1 < xEdges.Count; i += 2)
+                for (int j = 0; j + 1 < zEdges.Count; j += 2)
+                {
+                    float x0 = xEdges[i], x1 = xEdges[i + 1];
+                    float z0 = zEdges[j], z1 = zEdges[j + 1];
+
+                    // The near-centre block is our own building and its forecourt.
+                    bool isOwnBlock = x0 < 0f && x1 > 0f && z0 < 0f;
+                    if (isOwnBlock) continue;
+
+                    float blockW = x1 - x0, blockD = z1 - z0;
+                    if (blockW < 10f || blockD < 10f) continue;
+
+                    // One or two per block, inset so they never touch the kerb.
+                    int count = blockW > 30f && blockD > 30f ? 2 : 1;
+                    for (int k = 0; k < count; k++)
+                    {
+                        float footprint = Random.Range(9f, Mathf.Min(16f, Mathf.Min(blockW, blockD) - 6f));
+                        float half = footprint * 0.5f;
+                        float x = Random.Range(x0 + half + 2f, x1 - half - 2f);
+                        float z = Random.Range(z0 + half + 2f, z1 - half - 2f);
+                        float h = Random.Range(6f, 26f);
+
+                        MakeBox($"Building_{index}", roofs.transform,
+                            new Vector3(x, PavementTop + h * 0.5f, z),
+                            new Vector3(footprint, h, footprint),
+                            body);
+
+                        // A contrasting roof slab, so each roof reads as a surface at its own
+                        // height rather than as the top of an untextured block.
+                        MakeBox($"Roof_{index}", roofs.transform,
+                            new Vector3(x, PavementTop + h + 0.15f, z),
+                            new Vector3(footprint * 1.04f, 0.3f, footprint * 1.04f),
+                            roofTop);
+
+                        index++;
+                    }
+                }
         }
 
         /// <summary>
