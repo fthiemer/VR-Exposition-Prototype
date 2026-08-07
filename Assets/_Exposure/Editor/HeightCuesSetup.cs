@@ -385,8 +385,7 @@ namespace Exposure.EditorTools
 
             // Positions come from the same block grid the pavement uses. They used to be written
             // out as literals, which meant that moving the roads left the buildings standing in
-            // the middle of the carriageway -- the second time in this file that hardcoded
-            // coordinates silently stopped matching the layout they were derived from.
+            // the middle of the carriageway.
             var xEdges = BlockEdges(RoadsAlongZ, GroundMinX, GroundMaxX);
             var zEdges = BlockEdges(RoadsAlongX, GroundMinZ, GroundMaxZ);
 
@@ -400,37 +399,94 @@ namespace Exposure.EditorTools
                     float z0 = zEdges[j], z1 = zEdges[j + 1];
 
                     // The near-centre block is our own building and its forecourt.
-                    bool isOwnBlock = x0 < 0f && x1 > 0f && z0 < 0f;
-                    if (isOwnBlock) continue;
+                    if (x0 < 0f && x1 > 0f && z0 < 0f) continue;
 
-                    float blockW = x1 - x0, blockD = z1 - z0;
-                    if (blockW < 10f || blockD < 10f) continue;
-
-                    // One or two per block, inset so they never touch the kerb.
-                    int count = blockW > 30f && blockD > 30f ? 2 : 1;
-                    for (int k = 0; k < count; k++)
-                    {
-                        float footprint = Random.Range(9f, Mathf.Min(16f, Mathf.Min(blockW, blockD) - 6f));
-                        float half = footprint * 0.5f;
-                        float x = Random.Range(x0 + half + 2f, x1 - half - 2f);
-                        float z = Random.Range(z0 + half + 2f, z1 - half - 2f);
-                        float h = Random.Range(6f, 26f);
-
-                        MakeBox($"Building_{index}", roofs.transform,
-                            new Vector3(x, PavementTop + h * 0.5f, z),
-                            new Vector3(footprint, h, footprint),
-                            body);
-
-                        // A contrasting roof slab, so each roof reads as a surface at its own
-                        // height rather than as the top of an untextured block.
-                        MakeBox($"Roof_{index}", roofs.transform,
-                            new Vector3(x, PavementTop + h + 0.15f, z),
-                            new Vector3(footprint * 1.04f, 0.3f, footprint * 1.04f),
-                            roofTop);
-
-                        index++;
-                    }
+                    FillBlock(roofs.transform, x0, x1, z0, z1, body, roofTop, ref index);
                 }
+        }
+
+        /// <summary>
+        /// Fills one city block with buildings on an internal grid.
+        ///
+        /// One or two buildings per block left the city looking like scattered towers on open
+        /// ground -- from above, what makes a place read as a city is blocks being *built up*,
+        /// with the streets as the gaps. Each block is subdivided into cells and most of them get
+        /// a building, varied in height and slightly jittered so the result is dense without
+        /// looking stamped. Everything stays inset from the block edge, so nothing reaches the
+        /// carriageway.
+        /// </summary>
+        private static void FillBlock(Transform parent, float x0, float x1, float z0, float z1,
+                                      Material body, Material roofTop, ref int index)
+        {
+            const float inset = 2.5f;   // pavement left clear around the block
+            const float targetCell = 14f;
+
+            float usableW = (x1 - x0) - inset * 2f;
+            float usableD = (z1 - z0) - inset * 2f;
+            if (usableW < 8f || usableD < 8f) return;
+
+            int cols = Mathf.Max(1, Mathf.RoundToInt(usableW / targetCell));
+            int rows = Mathf.Max(1, Mathf.RoundToInt(usableD / targetCell));
+            float cellW = usableW / cols;
+            float cellD = usableD / rows;
+
+            for (int c = 0; c < cols; c++)
+                for (int r = 0; r < rows; r++)
+                {
+                    // A few gaps: courtyards and side streets are what stop a block reading as
+                    // one solid slab.
+                    if (Random.value < 0.18f) continue;
+
+                    float cx = x0 + inset + cellW * (c + 0.5f);
+                    float cz = z0 + inset + cellD * (r + 0.5f);
+
+                    float fw = Mathf.Min(cellW, 16f) * Random.Range(0.72f, 0.94f);
+                    float fd = Mathf.Min(cellD, 16f) * Random.Range(0.72f, 0.94f);
+                    float h = Random.Range(7f, 30f);
+
+                    // Jitter, but never enough to leave the cell.
+                    cx += Random.Range(-1f, 1f) * (cellW - fw) * 0.4f;
+                    cz += Random.Range(-1f, 1f) * (cellD - fd) * 0.4f;
+
+                    MakeBox($"Building_{index}", parent,
+                        new Vector3(cx, PavementTop + h * 0.5f, cz),
+                        new Vector3(fw, h, fd),
+                        body);
+
+                    // A contrasting roof slab, so each roof reads as a surface at its own height
+                    // rather than as the top of an untextured block.
+                    MakeBox($"Roof_{index}", parent,
+                        new Vector3(cx, PavementTop + h + 0.15f, cz),
+                        new Vector3(fw * 1.04f, 0.3f, fd * 1.04f),
+                        roofTop);
+
+                    index++;
+                }
+        }
+
+        /// <summary>
+        /// Regenerates only the neighbouring buildings, leaving the ground plan, the park and any
+        /// hand-placed objects alone. "Setup Height Cues" clears and rebuilds everything, which
+        /// throws away manual edits -- this is the safe way to re-roll the skyline.
+        /// </summary>
+        [MenuItem("Exposure/Rebuild Neighbouring Buildings")]
+        public static void RebuildBuildings()
+        {
+            if (AcrophobiaSceneSetup.RefuseDuringPlayMode()) return;
+
+            var root = GameObject.Find(RootName);
+            if (root == null)
+            {
+                Debug.LogError("[Exposure] HeightCues not found -- run Setup Height Cues first.");
+                return;
+            }
+
+            var existing = root.transform.Find("NeighbouringRoofs");
+            if (existing != null) Undo.DestroyObjectImmediate(existing.gameObject);
+
+            BuildNeighbouringRoofs(root.transform);
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            Debug.Log("[Exposure] Neighbouring buildings rebuilt; ground and park untouched.");
         }
 
         /// <summary>
