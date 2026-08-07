@@ -425,17 +425,33 @@ namespace Exposure.EditorTools
 
             var mat = TransparentLit("Cue_Boundary", new Color(0.95f, 0.78f, 0.25f, 0.75f), smoothness: 0.2f);
 
-            // Platform spans local z 0.5..2.5 and x -1..1. Kerbs run along both open sides.
+            // Derived from the platform constants rather than written out, which is why they were
+            // left a metre inside the real edge when the balcony grew: hardcoded numbers do not
+            // follow a resize, and a boundary marker in the wrong place is worse than none --
+            // it says the floor ends where it does not.
+            float centreZ = EdgeZ - PlatformDepth * 0.5f;
+            float halfWidth = PlatformWidth * 0.5f;
+
             foreach (var side in new[] { -1f, 1f })
             {
                 var kerb = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 kerb.name = side < 0 ? "Kerb_Left" : "Kerb_Right";
                 kerb.transform.SetParent(boundary, false);
-                kerb.transform.localPosition = new Vector3(side * 1.02f, 0.04f, 1.5f);
-                kerb.transform.localScale = new Vector3(0.06f, 0.09f, 2f);
+                kerb.transform.localPosition = new Vector3(side * (halfWidth - 0.03f), 0.04f, centreZ);
+                kerb.transform.localScale = new Vector3(0.06f, 0.09f, PlatformDepth);
                 Object.DestroyImmediate(kerb.GetComponent<Collider>()); // must not trip anyone
                 kerb.GetComponent<Renderer>().sharedMaterial = mat;
             }
+
+            // A kerb along the back too, so the walkable area is closed on the three sides that
+            // are not the drop.
+            var back = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            back.name = "Kerb_Back";
+            back.transform.SetParent(boundary, false);
+            back.transform.localPosition = new Vector3(0f, 0.04f, centreZ - PlatformDepth * 0.5f + 0.03f);
+            back.transform.localScale = new Vector3(PlatformWidth, 0.09f, 0.06f);
+            Object.DestroyImmediate(back.GetComponent<Collider>());
+            back.GetComponent<Renderer>().sharedMaterial = mat;
 
             var so = new SerializedObject(env);
             so.FindProperty("platformBoundary").objectReferenceValue = boundary.gameObject;

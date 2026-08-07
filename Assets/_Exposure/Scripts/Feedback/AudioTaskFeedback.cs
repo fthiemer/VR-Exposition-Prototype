@@ -92,7 +92,12 @@ public void TaskStarted(TaskType task)
 public void TaskCompleted()
         {
             StopHum();
-            _oneShotSource.PlayOneShot(completedClip != null ? completedClip : CompletionChime());
+
+            // Same reasoning as the start cue: no generated fallback. A synthesised two-note
+            // chime is unmistakably a test tone, and finishing a task someone found frightening
+            // deserves either a real sound or none at all -- not something that sounds like a
+            // menu error. Drop a clip into completedClip and it plays with no code change.
+            if (completedClip != null) _oneShotSource.PlayOneShot(completedClip);
         }
 
         public void TaskCancelled() => StopHum();

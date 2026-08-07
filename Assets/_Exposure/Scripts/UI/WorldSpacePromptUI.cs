@@ -26,7 +26,9 @@ namespace Exposure.UI
         [Header("Placement")]
         [Tooltip("Head transform the panel is positioned in front of. Falls back to Camera.main.")]
         [SerializeField] private Transform head;
-        [SerializeField, Min(0.3f)] private float distanceFromHead = 0.8f;
+        [Tooltip("Metres in front of the head. Must stay inside comfortable poking range -- a " +
+                 "panel you have to lean towards is one you keep missing.")]
+        [SerializeField, Min(0.3f)] private float distanceFromHead = 0.5f;
         [Tooltip("How far below eye level the panel sits. Comfortably below the horizon, so " +
                  "reading it does not compete with looking out over the edge.")]
         [SerializeField] private float verticalOffset = -0.18f;
@@ -45,7 +47,7 @@ namespace Exposure.UI
         [Header("Panel")]
         [Tooltip("Physical size in metres. Large enough that eight feared-outcome options stay " +
                  "readable, since that is the panel with the most text on it.")]
-        [SerializeField] private Vector2 panelSize = new Vector2(0.95f, 0.72f);
+        [SerializeField] private Vector2 panelSize = new Vector2(0.85f, 0.64f);
         [SerializeField] private Color panelColor = new Color(0.06f, 0.09f, 0.11f, 0.94f);
         [SerializeField] private Color buttonColor = new Color(0.16f, 0.36f, 0.44f, 1f);
         [SerializeField] private Color textColor = Color.white;
