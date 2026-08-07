@@ -143,10 +143,70 @@ public void TaskCompleted()
         /// </summary>
         private AudioClip CompletionChime()
         {
-            if (_runtimeComplete == null)
-                _runtimeComplete = BuildTone("PlaceholderChime", 0.55f,
-                                             new[] { 784f, 1175f }, new[] { 0.45f, 0.55f });
+            if (_runtimeComplete == null) _runtimeComplete = BuildFanfare();
             return _runtimeComplete;
+        }
+
+        /// <summary>
+        /// A short rising fanfare, generated rather than sampled.
+        ///
+        /// Three quick notes into a held fourth, all from one major triad -- that shape is what
+        /// the ear recognises as a fanfare rather than as a notification. Each note carries a
+        /// fifth and an octave above the fundamental, because a bare sine reads as a test tone;
+        /// the added partials are what give it a brassy edge without needing a recording.
+        ///
+        /// It plays in the same frame as the confetti, since both hang off the same completion
+        /// callback -- and the two together are the only reward the participant gets for doing
+        /// something they found frightening, so it is worth more than a beep.
+        /// </summary>
+        private static AudioClip BuildFanfare()
+        {
+            const int sampleRate = 44100;
+            const float total = 1.1f;
+            int samples = Mathf.RoundToInt(total * sampleRate);
+            var data = new float[samples];
+
+            // C major: C5, E5, G5, then C6 held.
+            float[] notes  = { 523.25f, 659.25f, 783.99f, 1046.50f };
+            float[] starts = { 0f,      0.11f,   0.22f,   0.35f };
+            float[] holds  = { 0.22f,   0.22f,   0.26f,   0.70f };
+
+            for (int n = 0; n < notes.Length; n++)
+            {
+                int from = Mathf.RoundToInt(starts[n] * sampleRate);
+                int len  = Mathf.RoundToInt(holds[n] * sampleRate);
+                float f = notes[n];
+
+                for (int i = 0; i < len && from + i < samples; i++)
+                {
+                    float t = (float)i / sampleRate;
+
+                    // Fast attack, gentle decay: struck, not switched on.
+                    float attack = Mathf.Clamp01(t / 0.012f);
+                    float decay = Mathf.Exp(-3.2f * t / holds[n]);
+                    float env = attack * decay;
+
+                    // Fundamental plus a fifth and an octave -- the partials that read as brass.
+                    float wave = Mathf.Sin(2f * Mathf.PI * f * t)
+                               + Mathf.Sin(2f * Mathf.PI * f * 1.5f * t) * 0.30f
+                               + Mathf.Sin(2f * Mathf.PI * f * 2f * t) * 0.22f;
+
+                    data[from + i] += wave * env * 0.16f;
+                }
+            }
+
+            // Guard against the overlapping notes summing past full scale.
+            float peak = 0f;
+            for (int i = 0; i < samples; i++) peak = Mathf.Max(peak, Mathf.Abs(data[i]));
+            if (peak > 0.95f)
+            {
+                float scale = 0.95f / peak;
+                for (int i = 0; i < samples; i++) data[i] *= scale;
+            }
+
+            var clip = AudioClip.Create("CompletionFanfare", samples, 1, sampleRate, false);
+            clip.SetData(data, 0);
+            return clip;
         }
 
         /// <summary>
