@@ -23,6 +23,29 @@ namespace Exposure
     }
 
     /// <summary>
+    /// One option on a choice panel.
+    ///
+    /// Locked options are shown rather than hidden: a list that grows as you progress reads as
+    /// a ladder you are climbing, while a list that shows only what you already have gives no
+    /// sense of where it leads -- and a floor menu with a single entry does not look like a
+    /// choice at all.
+    /// </summary>
+    public struct ChoiceOption
+    {
+        public string label;
+        public bool enabled;
+
+        /// <summary>Shown under the label when locked, e.g. why it is not available yet.</summary>
+        public string lockedHint;
+
+        public static ChoiceOption Available(string label)
+            => new ChoiceOption { label = label, enabled = true };
+
+        public static ChoiceOption Locked(string label, string hint)
+            => new ChoiceOption { label = label, enabled = false, lockedHint = hint };
+    }
+
+    /// <summary>
     /// In-VR behavioural-experiment prompts, asked once per session -- expectancy on the
     /// ground before the first task, outcome and re-rated expectancy back on the ground
     /// after the last one -- not per task, so the height exposure itself stays uninterrupted
@@ -38,7 +61,11 @@ namespace Exposure
         /// <summary>Asks how strongly it occurred (O) and re-rates expectancy for next time (E2).</summary>
         void AskOutcome(FearedOutcomeCatalog catalog, Prediction prediction, Action<OutcomeReport> onAnswered);
 
-        /// <summary>Generic labelled-button choice, used for floor selection and the post-task menu.</summary>
-        void ShowChoice(string message, string[] labels, Action<int> onChosen);
+        /// <summary>
+        /// Generic labelled-button choice, used for floor selection and the post-task menu.
+        /// Locked options are drawn greyed and cannot be picked; the callback only ever
+        /// reports the index of an enabled one.
+        /// </summary>
+        void ShowChoice(string message, ChoiceOption[] options, Action<int> onChosen);
     }
 }

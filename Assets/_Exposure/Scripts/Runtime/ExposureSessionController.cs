@@ -236,12 +236,20 @@ namespace Exposure
             if (_prompt != null)
             {
                 int chosenFloor = -1;
-                int optionCount = Mathf.Min(HighestUnlockedStepIndex + 1, scenario.steps.Count);
-                var floorLabels = new string[optionCount];
-                for (int f = 0; f < optionCount; f++)
-                    floorLabels[f] = scenario.steps[f] != null ? scenario.steps[f].title : $"Etage {f + 1}";
 
-                _prompt.ShowChoice(UIText.Get("floor_select_question"), floorLabels, i => chosenFloor = i);
+                // Every floor is listed, locked ones greyed out. Showing only what is unlocked
+                // makes a one-entry menu that does not read as a choice, and hides the fact that
+                // there is anything above to climb towards.
+                var floorOptions = new ChoiceOption[scenario.steps.Count];
+                for (int f = 0; f < scenario.steps.Count; f++)
+                {
+                    string title = scenario.steps[f] != null ? scenario.steps[f].title : $"Etage {f + 1}";
+                    floorOptions[f] = f <= HighestUnlockedStepIndex
+                        ? ChoiceOption.Available(title)
+                        : ChoiceOption.Locked(title, UIText.Get("floor_locked_hint"));
+                }
+
+                _prompt.ShowChoice(UIText.Get("floor_select_question"), floorOptions, i => chosenFloor = i);
                 while (chosenFloor < 0)
                 {
                     if (ShouldAbort()) { Abort(HeartRateReason()); yield break; }
@@ -311,24 +319,31 @@ namespace Exposure
                 // --- Entscheidung: repeat / different task / one floor up / end session ---
                 SetState(SessionState.TaskChoice);
                 var options = new List<TaskChoiceOption> { TaskChoiceOption.Repeat };
-                var choiceLabels = new List<string> { UIText.Get("choice_repeat") };
+                var choices = new List<ChoiceOption> { ChoiceOption.Available(UIText.Get("choice_repeat")) };
+
                 if (step.taskPool.Count > 1)
                 {
                     options.Add(TaskChoiceOption.OtherTask);
-                    choiceLabels.Add(UIText.Get("choice_other_task"));
+                    choices.Add(ChoiceOption.Available(UIText.Get("choice_other_task")));
                 }
-                if (floorIndex + 1 <= HighestUnlockedStepIndex)
-                {
-                    options.Add(TaskChoiceOption.NextFloor);
-                    choiceLabels.Add(UIText.Get("choice_next_floor"));
-                }
+
+                // "One floor up" always appears, greyed until this floor has actually been
+                // completed -- so the way onwards is visible before it is open.
+                bool canGoUp = floorIndex + 1 <= HighestUnlockedStepIndex
+                               && floorIndex + 1 < scenario.steps.Count;
+                options.Add(TaskChoiceOption.NextFloor);
+                choices.Add(canGoUp
+                    ? ChoiceOption.Available(UIText.Get("choice_next_floor"))
+                    : ChoiceOption.Locked(UIText.Get("choice_next_floor"),
+                                          UIText.Get("choice_next_floor_locked")));
+
                 options.Add(TaskChoiceOption.EndSession);
-                choiceLabels.Add(UIText.Get("choice_end_session"));
+                choices.Add(ChoiceOption.Available(UIText.Get("choice_end_session")));
 
                 int chosenOption = _prompt == null ? 0 : -1;
                 if (_prompt != null)
                 {
-                    _prompt.ShowChoice(UIText.Get("task_choice_question"), choiceLabels.ToArray(), i => chosenOption = i);
+                    _prompt.ShowChoice(UIText.Get("task_choice_question"), choices.ToArray(), i => chosenOption = i);
                     while (chosenOption < 0)
                     {
                         if (ShouldAbort()) { Abort(HeartRateReason()); yield break; }

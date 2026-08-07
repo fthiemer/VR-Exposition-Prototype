@@ -35,10 +35,12 @@ namespace Exposure
 
             // Floor selection (once, after the intro) and the post-task menu (after each task).
             ["floor_select_question"] = "Welche Etage möchtest du versuchen?",
+            ["floor_locked_hint"] = "noch nicht freigeschaltet",
             ["task_choice_question"] = "Wie geht's weiter?",
             ["choice_repeat"] = "Nochmal versuchen",
             ["choice_other_task"] = "Andere Aufgabe auf dieser Etage",
             ["choice_next_floor"] = "Eine Etage höher",
+            ["choice_next_floor_locked"] = "erst nach einer geschafften Aufgabe",
             ["choice_end_session"] = "Sitzung beenden",
             ["safer_than_before_coach"] = "Fühlst du dich sicherer als vorhin?",
 

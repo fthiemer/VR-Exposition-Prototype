@@ -123,15 +123,27 @@ public void AskOutcome(FearedOutcomeCatalog catalog, Prediction prediction, Acti
         }
 
         /// <summary>Generic labelled-button choice, used for floor selection and the post-task menu.</summary>
-        public void ShowChoice(string message, string[] labels, Action<int> onChosen)
+        public void ShowChoice(string message, ChoiceOption[] options, Action<int> onChosen)
         {
             Show();
             _title.text = message;
             ClearButtons();
-            for (int i = 0; i < labels.Length; i++)
+            for (int i = 0; i < options.Length; i++)
             {
                 int idx = i;
-                AddButton(labels[i], () => onChosen?.Invoke(idx));
+                var option = options[i];
+
+                if (option.enabled)
+                {
+                    AddButton(option.label, () => onChosen?.Invoke(idx));
+                }
+                else
+                {
+                    string label = string.IsNullOrEmpty(option.lockedHint)
+                        ? option.label
+                        : $"{option.label}\n{option.lockedHint}";
+                    AddLockedButton(label);
+                }
             }
         }
 
@@ -264,6 +276,34 @@ private void ShowOutcomeChoice(FearedOutcomeCatalog catalog, Action<string> onCh
         /// Builds a 0-100 slider plus the three scale anchors underneath it. The handle is
         /// deliberately wide: it is poked, not pinched, so it needs to be an easy target.
         /// </summary>
+        /// <summary>
+        /// A greyed, unclickable entry. Carries no Button at all rather than a disabled one:
+        /// a disabled Button still takes the poke and swallows it, which feels like the panel
+        /// is broken rather than like the option is not open yet.
+        /// </summary>
+        private void AddLockedButton(string label)
+        {
+            var go = new GameObject("LockedButton", typeof(Image));
+            go.transform.SetParent(_buttonArea, false);
+
+            var dimmed = buttonColor;
+            dimmed.a = 0.28f;
+            go.GetComponent<Image>().color = dimmed;
+
+            var textGo = new GameObject("Label", typeof(Text));
+            textGo.transform.SetParent(go.transform, false);
+            var text = textGo.GetComponent<Text>();
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize = 24;
+            text.color = mutedTextColor;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.text = label;
+            Stretch(textGo.GetComponent<RectTransform>());
+
+            _buttons.Add(go);
+        }
+
         private Slider AddSlider(string lowLabel, string midLabel, string highLabel)
         {
             var sliderGo = new GameObject("Rating", typeof(Image), typeof(Slider), typeof(LayoutElement));
