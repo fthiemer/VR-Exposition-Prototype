@@ -63,6 +63,31 @@ namespace Exposure
 
         private Coroutine _moveRoutine;
 
+        /// <summary>
+        /// Tracks the ride itself, not the coroutine: the routine outlives the arrival by the
+        /// length of the audio fade, and the task should start when the lift stops, not when the
+        /// sound has finished.
+        /// </summary>
+        private bool _riding;
+
+        /// <summary>
+        /// The elevator's own full volume, captured once.
+        ///
+        /// The fade used to read the current volume as its starting point and restore that at the
+        /// end. If a new ride interrupted a fade -- which happens whenever someone repeats a task
+        /// on the same floor -- the restore never ran, and the source stayed at whatever level the
+        /// fade had reached. Usually zero. Every later ride was then silent, with nothing in the
+        /// scene looking wrong.
+        /// </summary>
+        private float _elevatorVolume = 1f;
+
+        public bool IsTransitioning => _riding;
+
+        private void Awake()
+        {
+            if (elevatorAudio != null) _elevatorVolume = elevatorAudio.volume;
+        }
+
         public void Apply(HeightState state, bool instant)
         {
             // --- discrete object states: immediate ---
@@ -98,15 +123,24 @@ namespace Exposure
             if (platformRig == null) return;
 
             if (instant || transitionSeconds <= 0f)
+            {
+                _riding = false;
                 SetY(targetY);
+            }
             else
+            {
+                _riding = true;
                 _moveRoutine = StartCoroutine(MoveTo(targetY));
+            }
         }
 
         private IEnumerator MoveTo(float targetY)
         {
             if (elevatorAudio != null && !Mathf.Approximately(platformRig.localPosition.y, targetY))
+            {
+                elevatorAudio.volume = _elevatorVolume; // in case a previous fade was cut short
                 elevatorAudio.Play();
+            }
 
             float t = 0f;
             float startY = platformRig.localPosition.y;
@@ -118,6 +152,7 @@ namespace Exposure
                 yield return null;
             }
             SetY(targetY);
+            _riding = false; // arrived -- the task may start now
 
             // Fade rather than cut: the clip is longer than the ride, and a hard stop on
             // arrival reads as a glitch rather than as the lift settling.
@@ -129,17 +164,16 @@ namespace Exposure
 
         private IEnumerator FadeOutElevator()
         {
-            float startVolume = elevatorAudio.volume;
             float t = 0f;
             const float fadeSeconds = 0.6f;
             while (t < fadeSeconds)
             {
                 t += Time.deltaTime;
-                elevatorAudio.volume = Mathf.Lerp(startVolume, 0f, t / fadeSeconds);
+                elevatorAudio.volume = Mathf.Lerp(_elevatorVolume, 0f, t / fadeSeconds);
                 yield return null;
             }
             elevatorAudio.Stop();
-            elevatorAudio.volume = startVolume;
+            elevatorAudio.volume = _elevatorVolume;
         }
 
         private void SetY(float y)

@@ -30,6 +30,13 @@ namespace Exposure
 
         private Coroutine _lightRoutine;
 
+        /// <summary>
+        /// The room has no travel between steps -- only a light fade, which is short enough that
+        /// the session need not wait for it. Unlike the height scenario, where the ride is a
+        /// physical journey the task must not overlap with.
+        /// </summary>
+        public bool IsTransitioning => false;
+
         public void Apply(RoomState state, bool instant)
         {
             // --- diskrete Objektzustände: sofort ---

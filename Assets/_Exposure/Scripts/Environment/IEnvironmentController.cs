@@ -14,5 +14,14 @@ namespace Exposure
         /// (e.g. on init), otherwise a smooth transition is expected.
         /// </summary>
         void Apply(TState state, bool instant);
+
+        /// <summary>
+        /// True while a non-instant transition is still running.
+        ///
+        /// The session has to know this: starting the task during the lift ride means the
+        /// participant is asked to walk to the edge of a platform that is still moving, and the
+        /// task can even complete mid-ride because the geometry already matches.
+        /// </summary>
+        bool IsTransitioning { get; }
     }
 }

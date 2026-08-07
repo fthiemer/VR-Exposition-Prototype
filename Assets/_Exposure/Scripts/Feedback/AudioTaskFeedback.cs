@@ -43,7 +43,6 @@ namespace Exposure
         private AudioSource _oneShotSource;
         private AudioSource _loopSource;
         private AudioClip _runtimeHum;
-        private AudioClip _runtimeStart;
         private AudioClip _runtimeComplete;
         private bool _humming;
 
@@ -65,7 +64,12 @@ namespace Exposure
 public void TaskStarted(TaskType task)
         {
             StopHum();
-            _oneShotSource.PlayOneShot(taskStartClip != null ? taskStartClip : StartTone());
+
+            // No generated fallback here. The placeholder sine landed at the same moment as the
+            // lift, and a synthetic beep next to a recorded elevator does not read as one
+            // experience -- it read as the app making a noise at you. Silence is better than a
+            // stand-in until a real cue exists; assigning a clip brings it straight back.
+            if (taskStartClip != null) _oneShotSource.PlayOneShot(taskStartClip);
         }
 
         public void TaskProgress(float progress01, bool conditionHeld)
@@ -127,17 +131,6 @@ public void TaskCompleted()
         }
 
 /// <summary>
-        /// Placeholder attention tone for the task start: one short note, no rise or fall, so it
-        /// reads as "now" rather than as praise or alarm.
-        /// </summary>
-        private AudioClip StartTone()
-        {
-            if (_runtimeStart == null)
-                _runtimeStart = BuildTone("PlaceholderStart", 0.18f, new[] { 587f }, new[] { 1f });
-            return _runtimeStart;
-        }
-
-        /// <summary>
         /// Placeholder completion chime: a rising two-note interval, which is what makes a sound
         /// read as "done" rather than "stopped". Replaced the moment a real clip is assigned.
         /// </summary>

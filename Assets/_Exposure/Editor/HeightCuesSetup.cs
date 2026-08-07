@@ -37,14 +37,14 @@ namespace Exposure.EditorTools
         // on where a street is. Previously the buildings and cars were placed independently,
         // which is why the cars were not on anything.
         private const float RoadWidth = 7f;
-        private const float GroundMinX = -34f, GroundMaxX = 34f;
-        private const float GroundMinZ = -14f, GroundMaxZ = 46f;
+        private const float GroundMinX = -46f, GroundMaxX = 46f;
+        private const float GroundMinZ = -16f, GroundMaxZ = 62f;
 
         /// <summary>Centre lines of the roads running left-right (along x), given as z values.</summary>
-        private static readonly float[] RoadsAlongX = { 6f, 26f };
+        private static readonly float[] RoadsAlongX = { 6f, 38f };
 
         /// <summary>Centre lines of the roads running away from the platform (along z), given as x values.</summary>
-        private static readonly float[] RoadsAlongZ = { -14f, 14f };
+        private static readonly float[] RoadsAlongZ = { -20f, 20f };
 
         [MenuItem("Exposure/Setup Height Cues")]
         public static void Build()
@@ -110,7 +110,9 @@ namespace Exposure.EditorTools
             // HeightCues sits at world z = -1.5, the platform spans world z -1..1, so its rear
             // edge is world z = -1 -> local z = 0.5. Offset by half the thickness so the wall's
             // face lands on the edge rather than straddling it.
-            float wallZ = 0.5f - thickness * 0.5f;
+            // The balcony's rear edge, now that it is 3 m deep: its front edge sits at world
+            // z = 1, so the back is at world z = -2, and HeightCues itself sits at z = -1.5.
+            float wallZ = -0.5f - thickness * 0.5f;
 
             var wall = MakeBox("Wall", facade.transform,
                 new Vector3(0f, height * 0.5f, wallZ),
@@ -152,38 +154,43 @@ namespace Exposure.EditorTools
             float midX = (GroundMinX + GroundMaxX) * 0.5f;
             float midZ = (GroundMinZ + GroundMaxZ) * 0.5f;
 
-            // Base slab. Slightly below zero so the roads laid on top never z-fight with it.
+            // The pavement is the raised surface and the carriageway sits below it, as on a real
+            // street. It was the other way round, which read as roads laid on top of the
+            // pavement -- a small thing from up here, but it is exactly the kind of detail that
+            // makes a place look built rather than assembled.
+            const float kerbHeight = 0.16f;
+
             MakeBox("Pavement", ground.transform,
-                new Vector3(midX, -0.15f, midZ),
+                new Vector3(midX, -0.15f + kerbHeight, midZ),
                 new Vector3(width, 0.3f, depth),
                 pavement);
 
             foreach (float z in RoadsAlongX)
             {
                 MakeBox($"Road_X_{z}", ground.transform,
-                    new Vector3(midX, 0.01f, z),
-                    new Vector3(width, 0.06f, RoadWidth),
+                    new Vector3(midX, -0.03f, z),
+                    new Vector3(width, 0.12f, RoadWidth),
                     asphalt);
 
                 // Dashes rather than a solid line: the repetition is itself a ruler for the eye.
                 for (float x = GroundMinX + 3f; x < GroundMaxX; x += 6f)
                     MakeBox($"Mark_X_{z}_{x}", ground.transform,
-                        new Vector3(x, 0.05f, z),
-                        new Vector3(2.4f, 0.04f, 0.22f),
+                        new Vector3(x, 0.02f, z),
+                        new Vector3(2.4f, 0.03f, 0.22f),
                         marking);
             }
 
             foreach (float x in RoadsAlongZ)
             {
                 MakeBox($"Road_Z_{x}", ground.transform,
-                    new Vector3(x, 0.01f, midZ),
-                    new Vector3(RoadWidth, 0.06f, depth),
+                    new Vector3(x, -0.03f, midZ),
+                    new Vector3(RoadWidth, 0.12f, depth),
                     asphalt);
 
                 for (float z = GroundMinZ + 3f; z < GroundMaxZ; z += 6f)
                     MakeBox($"Mark_Z_{x}_{z}", ground.transform,
-                        new Vector3(x, 0.05f, z),
-                        new Vector3(0.22f, 0.04f, 2.4f),
+                        new Vector3(x, 0.02f, z),
+                        new Vector3(0.22f, 0.03f, 2.4f),
                         marking);
             }
 
@@ -230,7 +237,10 @@ namespace Exposure.EditorTools
 
             Random.InitState(90210); // stable layout, so the demo video does not change
 
-            for (int i = 0; i < 14; i++)
+            // Sparse on purpose. The park now spans a whole city block, and the green *surface*
+            // is what reads from thirty metres up -- packing it with trees turns it back into a
+            // texture and loses the openness that made it worth having.
+            for (int i = 0; i < 22; i++)
             {
                 float x = Random.Range(minX + 1f, maxX - 1f);
                 float z = Random.Range(minZ + 1f, maxZ - 1f);
@@ -238,7 +248,7 @@ namespace Exposure.EditorTools
                 MakeTree(park.transform, $"Tree_{i}", new Vector3(x, 0f, z), height, trunk, foliage);
             }
 
-            for (int i = 0; i < 18; i++)
+            for (int i = 0; i < 26; i++)
             {
                 float x = Random.Range(minX + 0.5f, maxX - 0.5f);
                 float z = Random.Range(minZ + 0.5f, maxZ - 0.5f);
@@ -402,7 +412,13 @@ namespace Exposure.EditorTools
                     Random.Range(-16f, 16f),
                     Random.Range(-1f, 34f),
                     Random.Range(3f, 26f));
-                go.transform.localScale = Vector3.one * Random.Range(0.35f, 0.7f);
+
+                // Party-balloon sized, not weather-balloon sized. At the previous 35-70 cm they
+                // read as spheres of unknown size drifting past, which destroys the very thing
+                // they exist for: an object whose real size the eye already knows is what lets
+                // it judge distance at all.
+                float diameter = Random.Range(0.22f, 0.32f);
+                go.transform.localScale = new Vector3(diameter, diameter * 1.25f, diameter);
                 Object.DestroyImmediate(go.GetComponent<Collider>());
                 go.GetComponent<Renderer>().sharedMaterial = palette[i % palette.Length];
 

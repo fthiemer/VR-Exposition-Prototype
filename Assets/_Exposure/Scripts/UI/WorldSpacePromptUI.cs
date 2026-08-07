@@ -27,7 +27,9 @@ namespace Exposure.UI
         [Tooltip("Head transform the panel is positioned in front of. Falls back to Camera.main.")]
         [SerializeField] private Transform head;
         [SerializeField, Min(0.3f)] private float distanceFromHead = 0.8f;
-        [SerializeField] private float verticalOffset = -0.1f;
+        [Tooltip("How far below eye level the panel sits. Comfortably below the horizon, so " +
+                 "reading it does not compete with looking out over the edge.")]
+        [SerializeField] private float verticalOffset = -0.18f;
         [Tooltip("Used instead of the tracked head height while it looks implausible (e.g. before the XR pose has settled after session start).")]
         [SerializeField] private float fallbackEyeHeight = 1.6f;
         [Tooltip("Head heights below this are treated as not-yet-tracked and get the fallback instead.")]
@@ -36,16 +38,14 @@ namespace Exposure.UI
                  "before giving up and leaving it where it is.")]
         [SerializeField, Min(0f)] private float settleTimeoutSeconds = 10f;
 
-        [Tooltip("How fast the panel matches head height. Height is the only thing it tracks -- " +
-                 "following horizontally would make it retreat from a finger reaching for it.")]
-        [SerializeField, Min(0.1f)] private float followSmoothing = 3.5f;
-
         [Tooltip("Buttons ignore presses for this long after a panel appears, so a poke meant " +
                  "for the previous panel cannot carry over into the next one.")]
         [SerializeField, Min(0f)] private float inputCooldownSeconds = 0.45f;
 
         [Header("Panel")]
-        [SerializeField] private Vector2 panelSize = new Vector2(0.7f, 0.5f);
+        [Tooltip("Physical size in metres. Large enough that eight feared-outcome options stay " +
+                 "readable, since that is the panel with the most text on it.")]
+        [SerializeField] private Vector2 panelSize = new Vector2(0.95f, 0.72f);
         [SerializeField] private Color panelColor = new Color(0.06f, 0.09f, 0.11f, 0.94f);
         [SerializeField] private Color buttonColor = new Color(0.16f, 0.36f, 0.44f, 1f);
         [SerializeField] private Color textColor = Color.white;
@@ -256,7 +256,7 @@ private void ShowOutcomeChoice(FearedOutcomeCatalog catalog, Action<string> onCh
             textGo.transform.SetParent(go.transform, false);
             var text = textGo.GetComponent<Text>();
             text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = 26;
+            text.fontSize = 30;
             text.color = textColor;
             text.alignment = TextAnchor.MiddleCenter;
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -309,7 +309,9 @@ private void ShowOutcomeChoice(FearedOutcomeCatalog catalog, Action<string> onCh
             var sliderGo = new GameObject("Rating", typeof(Image), typeof(Slider), typeof(LayoutElement));
             sliderGo.transform.SetParent(_buttonArea, false);
             _buttons.Add(sliderGo);
-            sliderGo.GetComponent<LayoutElement>().preferredHeight = 70f;
+            // A tall track, because the whole bar is the poke target with tracked hands -- a
+            // thin line is something you miss more often than you hit.
+            sliderGo.GetComponent<LayoutElement>().preferredHeight = 130f;
             sliderGo.GetComponent<Image>().color = trackColor;
 
             var fillArea = NewRect("Fill Area", sliderGo.transform);
@@ -326,6 +328,23 @@ private void ShowOutcomeChoice(FearedOutcomeCatalog catalog, Action<string> onCh
             fillRect.offsetMax = Vector2.zero;
             fillRect.sizeDelta = new Vector2(24f, 0f);
 
+            // Tick marks, one per whole step. The scale is discrete -- 0 to 10 -- but a smooth
+            // bar hides that, so people read it as "somewhere around here" and the recorded
+            // number is finer than the judgement behind it. Ticks make the steps visible and the
+            // middle one is drawn taller, because "neither" is the answer people aim at most.
+            for (int i = 0; i <= 10; i++)
+            {
+                bool isMiddle = i == 5;
+                var tick = NewImage($"Tick_{i}", sliderGo.transform,
+                                    isMiddle ? handleColor : mutedTextColor);
+                var tr = tick.rectTransform;
+                float x = i / 10f;
+                tr.anchorMin = new Vector2(x, isMiddle ? 0.12f : 0.24f);
+                tr.anchorMax = new Vector2(x, isMiddle ? 0.88f : 0.76f);
+                tr.sizeDelta = new Vector2(isMiddle ? 5f : 3f, 0f);
+                tr.anchoredPosition = new Vector2(24f * (1f - 2f * x), 0f); // stay inside the end caps
+            }
+
             var handleArea = NewRect("Handle Slide Area", sliderGo.transform);
             handleArea.anchorMin = Vector2.zero;
             handleArea.anchorMax = Vector2.one;
@@ -336,7 +355,7 @@ private void ShowOutcomeChoice(FearedOutcomeCatalog catalog, Action<string> onCh
             var handleRect = handle.rectTransform;
             handleRect.anchorMin = new Vector2(0f, 0f);
             handleRect.anchorMax = new Vector2(0f, 1f);
-            handleRect.sizeDelta = new Vector2(48f, 0f);
+            handleRect.sizeDelta = new Vector2(90f, 0f); // wide: it is poked, not pinched
 
             var slider = sliderGo.GetComponent<Slider>();
             slider.fillRect = fillRect;
@@ -448,36 +467,13 @@ private void Hide()
             }
         }
 
-/// <summary>
-        /// Keeps the panel at a constant distance without making it swim.
-        ///
-        /// Placing it once and leaving it there meant that walking towards the edge -- which is
-        /// the whole task -- left the panel behind, so it drifted out of comfortable reading and
-        /// poking range. Following the head every frame fixes that but makes the panel feel like
-        /// it is attached to your face. The dead zone is the compromise: it holds still while you
-        /// are roughly where you were, and glides back once you have actually moved away.
-        /// </summary>
-/// <summary>
-        /// The panel holds the position and rotation it was given, and only tracks head
-        /// *height*.
-        ///
-        /// It must not follow the head horizontally: poking at it pushes the head forward
-        /// slightly, and a panel that reacts to that retreats from the finger -- it flees
-        /// exactly when someone is trying to press it. Height is safe because standing taller
-        /// or crouching never happens as a side effect of reaching.
-        /// </summary>
-        private void Update()
-        {
-            if (!_visible || _canvas == null || Head == null) return;
-            if (!HasPlausibleHeadPose()) return;
-
-            float targetY = Head.position.y + verticalOffset;
-            var p = _canvas.transform.position;
-            if (Mathf.Abs(p.y - targetY) < 0.02f) return;
-
-            p.y = Mathf.Lerp(p.y, targetY, 1f - Mathf.Exp(-followSmoothing * Time.deltaTime));
-            _canvas.transform.position = p;
-        }
+        // The panel does not follow the head at all -- there is deliberately no Update().
+        //
+        // It tracked head height for a while, on the theory that only horizontal following
+        // could make it flee from a reaching finger. Testing said otherwise: leaning in to poke
+        // also changes head height, so the panel still drifted under the finger and touch stayed
+        // unreliable. A target that does not move is one you can actually hit. It is placed once,
+        // in front of and slightly below the eyes, and stays there.
 
         /// <summary>Where the panel would ideally sit for the current head pose.</summary>
         private void ComputeTargetPose(out Vector3 position, out Quaternion rotation)

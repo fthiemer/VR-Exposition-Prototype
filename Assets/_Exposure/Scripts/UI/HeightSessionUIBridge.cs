@@ -59,25 +59,20 @@ private void HandleState(SessionState state)
             switch (state)
             {
                 case SessionState.AwaitingReady:
+                    // One screen on the ground: what is waiting up there, and the button that
+                    // takes you there. Naming the conditions and confirming the ride were two
+                    // separate panels before, which just read as the same question twice.
                     ui.ShowConfirm(UIText.Get("ready_screen", _pendingLevelTitle),
                                    UIText.Get("ready_confirm"),
                                    () => session.ConfirmReady());
                     break;
 
-                case SessionState.AwaitingConditionAck:
-                    // Name what changes up there before the environment changes, so the
-                    // participant is agreeing to this specific step and already knows the task.
-                    ui.ShowConfirm(UIText.Get("condition_ack", _pendingLevelTitle, _pendingInstruction),
-                                   UIText.Get("condition_ack_confirm"),
+                case SessionState.TaskBriefing:
+                    // Shown on arrival, not during the ride. The task only begins -- and the
+                    // target marker only appears -- once this is acknowledged.
+                    ui.ShowConfirm(UIText.Get("task_briefing", _pendingInstruction),
+                                   UIText.Get("task_dismiss"),
                                    () => session.ConfirmCondition());
-                    break;
-
-                case SessionState.TaskActive:
-                    // Non-blocking: the task itself starts regardless of this panel, this
-                    // just tells the participant what to physically do (feedback item 7 --
-                    // "the task itself is never made clear").
-                    if (!string.IsNullOrWhiteSpace(_pendingInstruction))
-                        ui.ShowConfirm(_pendingInstruction, UIText.Get("task_dismiss"), () => { });
                     break;
 
                 case SessionState.Completed:

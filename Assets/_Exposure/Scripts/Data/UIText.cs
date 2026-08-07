@@ -11,11 +11,12 @@ namespace Exposure
     {
         private static readonly Dictionary<string, string> De = new Dictionary<string, string>
         {
-            ["ready_screen"] = "Als Nächstes: {0}\n\nBereit, nach oben zu gehen?",
-            ["ready_confirm"] = "Ich bin bereit",
-            ["condition_ack"] = "Dort oben erwartet dich:\n{0}\n\nDeine Aufgabe:\n{1}",
-            ["condition_ack_confirm"] = "Hochfahren",
+            ["ready_screen"] = "Als Nächstes:\n{0}",
+            ["ready_confirm"] = "Hochfahren",
+            ["task_briefing"] = "Deine Aufgabe:\n\n{0}",
             ["task_dismiss"] = "Verstanden",
+            ["space_hint"] = "Sorg dafür, dass rundherum etwa zwei Meter frei sind.\nDu wirst dich bewegen.",
+            ["space_hint_confirm"] = "Alles frei",
 
             // Intro (E1) and closing (O, E2) -- asked once per session, on the ground.
             ["predict_question"] = "Was, denkst du, wird dir dort oben passieren?",

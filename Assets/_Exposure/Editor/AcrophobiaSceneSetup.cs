@@ -111,10 +111,12 @@ namespace Exposure.EditorTools
                 envSo.ApplyModifiedProperties();
             }
 
+            ResizePlatform(envRoot.transform);
             BuildPlatformBoundary(envRoot.transform, env);
             ApplyGlassMaterials(envRoot.transform);
             BuildEnvironmentAudio(envRoot.transform, env);
             BuildPostProcessing();
+            SetSunForBalcony();
 
             // A longer ride. Three seconds barely registered as travel; the transition is what
             // sells having gone somewhere, and it is also the moment the participant has to
@@ -439,6 +441,77 @@ namespace Exposure.EditorTools
             so.ApplyModifiedProperties();
         }
 
+
+        /// <summary>Front edge of the platform, in AcrophobiaEnvironment's local space.</summary>
+        internal const float EdgeZ = 2.5f;
+
+        /// <summary>Platform footprint. Wide and deep enough to be a place rather than a ledge.</summary>
+        internal const float PlatformWidth = 4f;
+        internal const float PlatformDepth = 3f;
+
+        /// <summary>
+        /// Sizes the balcony.
+        ///
+        /// It was 2 x 2 m, which is the size of the tracked play space and therefore exactly the
+        /// size at which every direction is an edge. Testing said it felt like standing on a
+        /// ledge rather than on a building: there was nowhere to retreat to, so approaching the
+        /// edge was not a decision, it was the only option. Widening sideways and backwards --
+        /// while leaving the distance to the drop unchanged -- gives the approach somewhere to
+        /// start from, which is what makes it an exposure step rather than a starting condition.
+        /// </summary>
+        private static void ResizePlatform(Transform envRoot)
+        {
+            float centreZ = EdgeZ - PlatformDepth * 0.5f;
+
+            foreach (var name in new[] { "SurfaceSolid", "SurfaceGrating", "SurfaceGlass" })
+            {
+                var surface = envRoot.Find(name);
+                if (surface == null) continue;
+                surface.localPosition = new Vector3(0f, -0.1f, centreZ);
+                surface.localScale = new Vector3(PlatformWidth, 0.2f, PlatformDepth);
+            }
+
+            // The railing spans the open front edge, so it grows with the width.
+            foreach (var name in new[] { "RailingSolid", "RailingGlass" })
+            {
+                var railing = envRoot.Find(name);
+                if (railing == null) continue;
+                railing.localPosition = new Vector3(0f, 0.5f, EdgeZ);
+                railing.localScale = new Vector3(PlatformWidth, 1f, 0.1f);
+            }
+
+            // The plank's apron is the solid ground behind it, so it covers everything except
+            // the strip the plank itself occupies.
+            var apron = envRoot.Find("PlankApron");
+            if (apron != null)
+            {
+                apron.localPosition = new Vector3(0f, -0.1f, centreZ - 0.5f);
+                apron.localScale = new Vector3(PlatformWidth, 0.2f, PlatformDepth - 1f);
+            }
+        }
+
+        /// <summary>
+        /// Points the sun so the balcony is lit rather than in its own building's shadow.
+        ///
+        /// The default rotation put the sun behind the facade, so the participant started in
+        /// shade -- which cost more than it sounds: without direct light the floor had no
+        /// shading gradient, so there was no visible platform underfoot at all, and the first
+        /// thing someone does at height is look at their feet.
+        /// </summary>
+        private static void SetSunForBalcony()
+        {
+            var sun = Object.FindFirstObjectByType<Light>();
+            if (sun == null || sun.type != LightType.Directional) return;
+
+            Undo.RecordObject(sun.transform, "Aim sun at balcony");
+            Undo.RecordObject(sun, "Aim sun at balcony");
+
+            // Coming from the front-left and fairly high: the balcony faces +z, so light from
+            // that side reaches it, and a steep angle keeps the railing's shadow short.
+            sun.transform.rotation = Quaternion.Euler(50f, 205f, 0f);
+            sun.intensity = 1.15f;
+            sun.shadows = LightShadows.Soft;
+        }
 
         /// <summary>
         /// Global post-processing volume: bloom, tonemapping and a light vignette.

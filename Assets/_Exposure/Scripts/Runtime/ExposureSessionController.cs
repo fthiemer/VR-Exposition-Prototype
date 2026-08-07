@@ -10,8 +10,13 @@ namespace Exposure
         Idle,
         Intro,
         FloorSelect,
+
+        /// <summary>On the ground, naming the floor and its conditions. Confirming rides the lift.</summary>
         AwaitingReady,
-        AwaitingConditionAck,
+
+        /// <summary>Arrived. The task is named here, and only starts once it is acknowledged.</summary>
+        TaskBriefing,
+
         TaskActive,
         TaskChoice,
         Closing,
@@ -279,19 +284,13 @@ namespace Exposure
                 CurrentVariant = variant;
                 OnTaskVariantChanged?.Invoke(variant);
 
-                // --- ready screen: no automatic level change ---
+                // --- one gate on the ground: what is up there, and confirming rides the lift ---
+                // There used to be a second confirmation between "ready" and "go up". It asked
+                // the same question twice in a row from the same spot, so it read as a misclick
+                // rather than as a considered second decision.
                 SetState(SessionState.AwaitingReady);
                 _readyConfirmed = false;
                 while (!_readyConfirmed)
-                {
-                    if (ShouldAbort()) { Abort(HeartRateReason()); yield break; }
-                    yield return null;
-                }
-
-                // --- second gate: say what will be different up there, then confirm again ---
-                SetState(SessionState.AwaitingConditionAck);
-                _conditionAcknowledged = false;
-                while (!_conditionAcknowledged)
                 {
                     if (ShouldAbort()) { Abort(HeartRateReason()); yield break; }
                     yield return null;
@@ -302,6 +301,24 @@ namespace Exposure
                 _env?.Apply(variant.state, instant: !isFloorChange);
                 _appliedStepIndex = floorIndex;
                 _logger?.LogStepStart(floorIndex, step.stepId, CurrentHeartRate());
+
+                // --- wait out the ride before saying anything about the task ---
+                // Briefing someone mid-ride means they are reading while the floor moves, and the
+                // task could even complete during the ride because the geometry already matches.
+                while (_env != null && _env.IsTransitioning)
+                {
+                    if (ShouldAbort()) { Abort(HeartRateReason()); yield break; }
+                    yield return null;
+                }
+
+                // --- arrived: name the task, and start it only once it is acknowledged ---
+                SetState(SessionState.TaskBriefing);
+                _conditionAcknowledged = false;
+                while (!_conditionAcknowledged)
+                {
+                    if (ShouldAbort()) { Abort(HeartRateReason()); yield break; }
+                    yield return null;
+                }
 
                 // --- carry out the task ---
                 SetState(SessionState.TaskActive);
@@ -367,8 +384,17 @@ namespace Exposure
                 }
             }
 
-            // --- 5. Abschluss: back on the ground, O and E2 ---
+            // --- 5. Abschluss: ride back down first, then ask ---
+            // The closing questions belong on the ground, which means waiting out the descent --
+            // asking during it puts the questions in mid-air, the one place the whole design is
+            // built to keep them out of.
             _env?.Apply(DefaultState, instant: false);
+            while (_env != null && _env.IsTransitioning)
+            {
+                if (ShouldAbort()) { Abort(HeartRateReason()); yield break; }
+                yield return null;
+            }
+
             SetState(SessionState.Closing);
             _outcome = null;
             if (_prompt != null && fearedOutcomes != null && _prediction.Value.outcomeId != "none")
