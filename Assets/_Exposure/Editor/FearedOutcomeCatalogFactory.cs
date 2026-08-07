@@ -31,12 +31,12 @@ public static void CreateCatalog()
             // to someone standing on a ledge.
             catalog.outcomes.Add(new FearedOutcome { id = "fall",      text = "Ich werde herunterfallen." });
             catalog.outcomes.Add(new FearedOutcome { id = "injury",    text = "Ich werde mich verletzen." });
-            catalog.outcomes.Add(new FearedOutcome { id = "unsafe",    text = "Hier oben zu sein ist gefährlich." });
+            catalog.outcomes.Add(new FearedOutcome { id = "unsafe",    text = "Ich bin hier oben nicht sicher." });
             catalog.outcomes.Add(new FearedOutcome { id = "panic",     text = "Ich gerate in Panik und verliere die Kontrolle." });
             catalog.outcomes.Add(new FearedOutcome { id = "endure",    text = "Ich werde die Angst nicht aushalten." });
-            catalog.outcomes.Add(new FearedOutcome { id = "faint",     text = "Mir wird schwarz vor Augen." });
+            catalog.outcomes.Add(new FearedOutcome { id = "faint",     text = "Ich werde ohnmächtig." });
             catalog.outcomes.Add(new FearedOutcome { id = "freeze",    text = "Ich erstarre und komme nicht mehr weg." });
-            catalog.outcomes.Add(new FearedOutcome { id = "dizzy",     text = "Mir wird so schwindelig, dass ich mich nicht halten kann." });
+            catalog.outcomes.Add(new FearedOutcome { id = "dizzy",     text = "Ich werde so schwindelig, dass ich mich nicht halten kann." });
 
             AssetDatabase.CreateAsset(catalog, $"{Folder}/FearedOutcomes_Acrophobia.asset");
             AssetDatabase.SaveAssets();

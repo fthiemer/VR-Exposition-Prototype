@@ -360,7 +360,12 @@ namespace Exposure
                 int chosenOption = _prompt == null ? 0 : -1;
                 if (_prompt != null)
                 {
-                    _prompt.ShowChoice(UIText.Get("task_choice_question"), choices.ToArray(), i => chosenOption = i);
+                    // Completing a task and giving up on one lead to the same menu but are not
+                    // the same moment, and one neutral heading made the completed case read as
+                    // though something had failed.
+                    string heading = UIText.Get(_taskCompletedByDetection
+                        ? "task_choice_done" : "task_choice_question");
+                    _prompt.ShowChoice(heading, choices.ToArray(), i => chosenOption = i);
                     while (chosenOption < 0)
                     {
                         if (ShouldAbort()) { Abort(HeartRateReason()); yield break; }

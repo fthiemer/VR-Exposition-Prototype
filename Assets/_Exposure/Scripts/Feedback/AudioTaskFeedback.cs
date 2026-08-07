@@ -43,6 +43,7 @@ namespace Exposure
         private AudioSource _oneShotSource;
         private AudioSource _loopSource;
         private AudioClip _runtimeHum;
+        private AudioClip _runtimeStart;
         private AudioClip _runtimeComplete;
         private bool _humming;
 
@@ -64,12 +65,7 @@ namespace Exposure
 public void TaskStarted(TaskType task)
         {
             StopHum();
-
-            // No generated fallback here. The placeholder sine landed at the same moment as the
-            // lift, and a synthetic beep next to a recorded elevator does not read as one
-            // experience -- it read as the app making a noise at you. Silence is better than a
-            // stand-in until a real cue exists; assigning a clip brings it straight back.
-            if (taskStartClip != null) _oneShotSource.PlayOneShot(taskStartClip);
+            _oneShotSource.PlayOneShot(taskStartClip != null ? taskStartClip : StartTone());
         }
 
         public void TaskProgress(float progress01, bool conditionHeld)
@@ -92,12 +88,7 @@ public void TaskStarted(TaskType task)
 public void TaskCompleted()
         {
             StopHum();
-
-            // Same reasoning as the start cue: no generated fallback. A synthesised two-note
-            // chime is unmistakably a test tone, and finishing a task someone found frightening
-            // deserves either a real sound or none at all -- not something that sounds like a
-            // menu error. Drop a clip into completedClip and it plays with no code change.
-            if (completedClip != null) _oneShotSource.PlayOneShot(completedClip);
+            _oneShotSource.PlayOneShot(completedClip != null ? completedClip : CompletionChime());
         }
 
         public void TaskCancelled() => StopHum();
@@ -136,6 +127,17 @@ public void TaskCompleted()
         }
 
 /// <summary>
+        /// Placeholder completion chime: a rising two-note interval, which is what makes a sound
+        /// read as "done" rather than "stopped". Replaced the moment a real clip is assigned.
+        /// </summary>
+        private AudioClip StartTone()
+        {
+            if (_runtimeStart == null)
+                _runtimeStart = BuildTone("PlaceholderStart", 0.18f, new[] { 587f }, new[] { 1f });
+            return _runtimeStart;
+        }
+
+        /// <summary>
         /// Placeholder completion chime: a rising two-note interval, which is what makes a sound
         /// read as "done" rather than "stopped". Replaced the moment a real clip is assigned.
         /// </summary>
