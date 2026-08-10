@@ -1,23 +1,18 @@
 # VR-Expositionsprototyp — Höhenangst
 
-App-geführte Höhenangst-Exposition für Meta Quest, die den Fortschritt an der
+Prototyp für App-geführte Höhenangst-Exposition für Meta Quest, die den Fortschritt an der
 Erwartungs**änderung** ausrichtet statt am Abklingen der Angst. Die Patient:in arbeitet
 selbstgesteuert in gestuften Höhensituationen; die Therapeut:in verordnet und bespricht die
-dokumentierten Ergebnisse.
+dokumentierten Ergebnisse. Blick in die App im 6 minütigen [Playthrough auf Youtube](https://youtu.be/qVgzjDLyt3I).
 
 Unity 6000.5.7f1 · URP · OpenXR · natives Handtracking
 Gebaut für Meta Quest 2/3/3S, **getestet ausschließlich auf Quest 2**.
 
-Ablauf im Detail: **Anhang 1** · Klassendiagramm: **Anhang 2**
-
 ---
 
-## KOL-Auftrag (simuliert)
+## Erfundener (evidenzbasierter) KOL-Auftrag
 
-*Fachliche Vorgabe, mitgeschrieben im Abstimmungsgespräch — Grundlage für die Umsetzung.*
-
-**Ziel.** Höhenexposition ohne Hochhaus, Brücke oder Auswärtstermin. Jede Sitzung ist ein
-**Verhaltensexperiment**: Befürchtung vorher benennen, prüfen, hinterher auswerten.
+**Ziel.** Graduelle Höhenexposition in-virtuo. Jede Sitzung ist ein **Verhaltensexperiment**: Befürchtung vorher benennen, prüfen, hinterher auswerten.
 
 **Selbstgesteuert im geführten Rahmen.** Die App liefert Struktur, Anleitung und
 Dokumentation — welche Befürchtung geprüft wird, auf welcher Etage, mit welcher Aufgabe und
@@ -30,7 +25,7 @@ bekommt über die Erwartungsverletzung eine konkurrierende Sicherheitsassoziatio
 Sitzungsstruktur folgen der automatisierten VR-Höhentherapie von
 [Freeman et al. 2018](https://doi.org/10.1016/S2215-0366(18)30226-8) (RCT, d = 2,0).
 
-### Stellschrauben
+### Stellschrauben (im Prototyp)
 
 | Parameter | Stufen |
 |---|---|
@@ -40,17 +35,9 @@ Sitzungsstruktur folgen der automatisierten VR-Höhentherapie von
 | Aufgabe | stehen → an Rand treten → hinabblicken → Steg queren |
 | Wind | aus … stark |
 
-Je Stufe in einem ScriptableObject hinterlegt, ohne Codeänderung editierbar. Die sechs
-angelegten Stufen heben mehrere Parameter zugleich an — eine bewusst grobe Staffelung für
-den Prototyp.
-
 ### Rahmenbedingungen
 
-Abbruch jederzeit ohne Begründung, harte Grenze bei Herzfrequenz 200 · Start ebenerdig, kein
-automatischer Stufenwechsel, die Aufzugfahrt wird real durchlebt · **null Datenabfragen in
-der Höhe** · Bedienung per Handtracking ohne Controller · Sicherheitsverhalten soll erklärt,
-nicht algorithmisch bewertet werden · vor und nach der Behandlung
-[Acrophobia Questionnaire](https://doi.org/10.1016/S0005-7894(77)80116-0) und STAI-State.
+Abbruch jederzeit ohne Begründung, harte Grenze bei Herzfrequenz 200 · Start ebenerdig, Selbstwahl bei Stufenwechsel, die Aufzugfahrt wird real durchlebt · Bedienung per Handtracking ohne Controller.
 
 ---
 
@@ -76,7 +63,7 @@ generisch über den Umgebungszustand; Höhenangst (`HeightState`) und Klaustroph
 generische Struktur, die nur einmal verwendet wurde, ist nicht als generisch nachgewiesen.
 
 **Inhalte als Daten.** Stufen, Parameter und Befürchtungstexte liegen in ScriptableObjects
-aus Editor-Generatoren. Eine Stufe hinzuzufügen ist Dateneingabe.
+aus Editor-Generatoren. Eine Stufe hinzuzufügen ist Dateneingabe. 
 
 **Abhängigkeiten über Interfaces.** `IPredictionPrompt`, `ITaskCompletionSource`,
 `IEnvironmentController<TState>`, `IBiosignalSource`, `ISessionLogger`. Ein echter
@@ -97,9 +84,8 @@ Assets/_Exposure/
 ```
 
 ## Mögliche Erweiterungen
-
 - **Speicherstände** — Sitzungen fortsetzen und die Erwartungsänderung über mehrere Sitzungen
-  als Verlauf zeigen. Derzeit startet jede Sitzung neu.
+  als Verlauf zeigen. Derzeit setzt sich der Status zwischen den Sitzungen zurück.
 - **Aufgabenpool je Etage füllen** — `TaskVariant<TState>` trägt beliebig viele Aufgaben pro
   Stufe, hinterlegt ist bislang eine.
 - **Sprachausgabe statt Panels** — bei Freeman per Spracherkennung oder virtueller Armbanduhr.
@@ -108,7 +94,7 @@ Assets/_Exposure/
   statt nur zu überbieten.
 - **Therapeutenzugang** — Stufen vorgeben, eingreifen, Kennzahlen einsehen. CSV liegt vor,
   eine Oberfläche nicht.
-- **Sicherheitsverhalten adressieren** — Festhalten, Wegschauen, Abstandhalten schwächen den
+- **Sicherheitsverhalten adressieren** — Interaktiv durch Coaching Stimme s. [Freeman et al. 2018](https://doi.org/10.1016/S2215-0366(18)30226-8). Begründung: Festhalten, Wegschauen, Abstandhalten schwächen den
   Effekt ([Blakey & Abramowitz 2019](https://doi.org/10.1016/j.cbpra.2018.03.001)).
 
 ## Assets
