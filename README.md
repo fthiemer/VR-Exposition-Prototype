@@ -9,8 +9,10 @@ Unity 6000.5.7f1 · URP · OpenXR · natives Handtracking
 Gebaut für Meta Quest 2/3/3S, **getestet ausschließlich auf Quest 2**.
 
 ---
+<img width="720" height="720" alt="grafik" src="https://github.com/user-attachments/assets/e76a4236-6cbb-4b4a-a26c-14ba55562a2a" />
 
-## Erfundener (evidenzbasierter) KOL-Auftrag
+
+## KOL-Auftrag (simuliert)
 
 **Ziel.** Graduelle Höhenexposition in-virtuo. Jede Sitzung ist ein **Verhaltensexperiment**: Befürchtung vorher benennen, prüfen, hinterher auswerten.
 
@@ -37,7 +39,7 @@ Sitzungsstruktur folgen der automatisierten VR-Höhentherapie von
 
 ### Rahmenbedingungen
 
-Abbruch jederzeit ohne Begründung, harte Grenze bei Herzfrequenz 200 · Start ebenerdig, Selbstwahl bei Stufenwechsel, die Aufzugfahrt wird real durchlebt · Bedienung per Handtracking ohne Controller.
+Abbruch jederzeit ohne Begründung, harte Grenze bei Herzfrequenz 200 · Start ebenerdig, Selbstwahl bei Stufenwechsel, die Aufzugfahrt wird real durchlebt · Bedienung per Handtracking und Controller möglich.
 
 ---
 
